@@ -9,6 +9,7 @@ import { ShareButton } from "@/components/common/ShareButton";
 import { puzzleDate, puzzleNumber } from "@/lib/day";
 import { combinedShare } from "@/lib/client/combined-share";
 import { allProgress, isTripdub, streaks, type DayProgress, type GameKey } from "@/lib/client/progress";
+import { ShotChartPreview, TriviaPreview } from "./Previews";
 
 type GameCard = { key: GameKey; title: string; href: string; blurb: string };
 
@@ -168,13 +169,16 @@ export function HomeDashboard() {
 
       <div className="mt-5 grid gap-5 md:grid-cols-2">
         {MORE.map((card) => (
-          <section key={card.key} className="pop rounded-[var(--radius-card)] bg-white p-6">
-            <h2 className="text-3xl font-extrabold tracking-tight">{card.title}</h2>
-            <p className="mt-2 text-ink-soft">{card.blurb}</p>
-            <div className="mt-4">
-              <Status done={day[card.key]} />
+          <section key={card.key} className="pop overflow-hidden rounded-[var(--radius-card)] bg-white">
+            <div className="h-36 border-b-[2.5px] border-ink bg-sky">{card.key === "trivia" ? <TriviaPreview /> : <ShotChartPreview />}</div>
+            <div className="p-6">
+              <h2 className="text-3xl font-extrabold tracking-tight">{card.title}</h2>
+              <p className="mt-2 text-ink-soft">{card.blurb}</p>
+              <div className="mt-4">
+                <Status done={day[card.key]} />
+              </div>
+              <Buttons card={card} done={!!day[card.key]} />
             </div>
-            <Buttons card={card} done={!!day[card.key]} />
           </section>
         ))}
       </div>
