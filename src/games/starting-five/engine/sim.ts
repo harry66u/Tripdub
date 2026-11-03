@@ -132,8 +132,8 @@ function possession(off: Team, def: Team, r: () => number): number {
 
     let p: number = BASE[type];
     if (type === "three") {
-      p += 0.14 * norm(shooter.r.spc);
-      p -= 0.08 * norm(defender.r.per);
+      p += 0.1 * norm(shooter.r.spc);
+      p -= 0.05 * norm(defender.r.per);
     } else if (type === "mid") {
       p += 0.12 * norm(shooter.r.sco);
       p -= 0.08 * norm(defender.r.per);
@@ -154,7 +154,8 @@ function possession(off: Team, def: Team, r: () => number): number {
       if (type === "three") box.fg3m++;
       box.pts += pts;
       off.score += pts;
-      if (r() < 0.6) off.box[weightedIndex(excluding(off.passW, si), r)].ast++;
+      // Teams with real playmakers assist on more of their buckets.
+      if (r() < 0.45 + (0.25 * off.ply) / 100) off.box[weightedIndex(excluding(off.passW, si), r)].ast++;
       return 1;
     }
     if (type === "rim" && r() < 0.4) {
