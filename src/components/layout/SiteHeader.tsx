@@ -18,6 +18,9 @@ export function SiteHeader() {
           <Link href="/shot-chart" className="hidden rounded-full px-3 py-2 hover:bg-white/50 md:inline">
             Shot Chart
           </Link>
+          <Link href="/deep-cut" className="hidden rounded-full px-3 py-2 hover:bg-white/50 md:inline">
+            Deep Cut
+          </Link>
           <Link href="/about" className="rounded-full px-3 py-2 hover:bg-white/50">
             How it works
           </Link>

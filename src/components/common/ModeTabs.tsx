@@ -2,19 +2,32 @@
 
 export type Mode = "daily" | "unlimited";
 
-export function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+const DEFAULT_MODES = [
+  { id: "daily", label: "Daily" },
+  { id: "unlimited", label: "Unlimited" },
+] as const;
+
+export function ModeTabs<M extends string = Mode>({
+  mode,
+  onChange,
+  modes = DEFAULT_MODES as unknown as readonly { id: M; label: string }[],
+}: {
+  mode: M;
+  onChange: (m: M) => void;
+  modes?: readonly { id: M; label: string }[];
+}) {
   return (
     <div role="tablist" aria-label="Game mode" className="inline-flex rounded-full border-[2.5px] border-ink bg-white p-1 shadow-[var(--shadow-pop-sm)]">
-      {(["daily", "unlimited"] as const).map((m) => (
+      {modes.map(({ id: m, label }) => (
         <button
           key={m}
           role="tab"
           aria-selected={mode === m}
           type="button"
           onClick={() => m !== mode && onChange(m)}
-          className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${mode === m ? "bg-ink text-white" : "text-ink hover:bg-wash"}`}
+          className={`rounded-full px-3.5 py-1.5 text-sm font-bold transition-colors sm:px-4 ${mode === m ? "bg-ink text-white" : "text-ink hover:bg-wash"}`}
         >
-          {m === "daily" ? "Daily" : "Unlimited"}
+          {label}
         </button>
       ))}
     </div>

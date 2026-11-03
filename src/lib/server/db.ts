@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export type GameId = "starting-five" | "trivia" | "shot-chart";
+export type GameId = "starting-five" | "trivia" | "shot-chart" | "deep-cut";
 
 let client: SupabaseClient | null | undefined;
 

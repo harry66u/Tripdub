@@ -3,8 +3,8 @@
 import { addDays, puzzleDate } from "@/lib/day";
 import { load, save } from "./storage";
 
-export type GameKey = "sf" | "trivia" | "shot";
-export const GAME_KEYS: GameKey[] = ["sf", "trivia", "shot"];
+export type GameKey = "sf" | "trivia" | "shot" | "deep";
+export const GAME_KEYS: GameKey[] = ["sf", "trivia", "shot", "deep"];
 export type DayProgress = Partial<Record<GameKey, { summary: string; share: string }>>;
 
 const KEY = "tripdub:progress:v1";
