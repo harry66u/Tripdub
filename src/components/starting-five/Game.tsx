@@ -399,7 +399,7 @@ export function Game() {
           </section>
 
           {/* Matchup board */}
-          <section className="grid gap-5">
+          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
             <div className="pop rounded-[var(--radius-card)] bg-white p-4 sm:p-5">
               <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-xl font-extrabold">Your five vs the Mystery Five</h2>

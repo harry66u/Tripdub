@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "next build && playwright test",
     "data": "python3 -I scripts/data/fetch.py --shots && python3 -I scripts/data/build_players.py",
     "schedule": "tsx scripts/schedule/generate.ts",
     "schedule:check": "tsx scripts/schedule/check.ts",

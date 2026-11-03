@@ -123,7 +123,7 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
   });
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <Scoreboard result={result} stage={stage} />
 
       <motion.section {...reveal(0)} className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -172,7 +172,7 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
         <GradeBars grades={result.grades} compare={result.mysteryGrades} compareLabel="Mystery Five" />
       </motion.section>
 
-      <motion.section {...reveal(3)} className="grid gap-4">
+      <motion.section {...reveal(3)} className="grid grid-cols-[minmax(0,1fr)] gap-4">
         <h2 className="text-xl font-extrabold">Box score</h2>
         <BoxScore title="Your five" lineup={result.lineup} box={result.featured.home} />
         <BoxScore title="Mystery Five" lineup={result.mystery} box={result.featured.away} />
