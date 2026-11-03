@@ -22,7 +22,10 @@ export function siteUrl(): string {
 
 /** Spoiler-free result for the clipboard: no player names, just the outcome and grades. */
 export function shareText(r: {
-  puzzleNumber: number;
+  /** null for unlimited games */
+  puzzleNumber: number | null;
+  /** Opposing team name, e.g. "Twin Towers" */
+  opponent: string;
   won: boolean;
   homeScore: number;
   awayScore: number;
@@ -31,8 +34,8 @@ export function shareText(r: {
   percentile: number | null;
 }): string {
   const lines = [
-    `TRIPDUB · Starting Five #${r.puzzleNumber}`,
-    `${r.won ? "W" : "L"} ${r.homeScore}–${r.awayScore} vs the Mystery Five · Win prob ${Math.round(r.winProb * 100)}%`,
+    r.puzzleNumber == null ? "TRIPDUB · Starting Five · Unlimited" : `TRIPDUB · Starting Five #${r.puzzleNumber}`,
+    `${r.won ? "W" : "L"} ${r.homeScore}–${r.awayScore} vs the ${r.opponent} · Win prob ${Math.round(r.winProb * 100)}%`,
   ];
   if (r.percentile != null) lines.push(`Top ${topPercent(r.percentile)}% today`);
   lines.push(GRADE_ORDER.map((k) => `${SHORT[k]} ${gradeEmoji(r.grades[k])}`).join(" "));

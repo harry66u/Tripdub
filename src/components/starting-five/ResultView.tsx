@@ -63,7 +63,7 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
           <p className="mt-2 text-xs font-semibold text-sky">{done ? (periods > 4 ? "Final, overtime" : "Final") : "Live sim"}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm font-semibold text-sky">Mystery Five</p>
+          <p className="text-sm font-semibold text-sky">{result.theme}</p>
           <CountUp value={upTo(g.away.quarters)} className="varsity tnum block text-6xl leading-none sm:text-7xl" />
         </div>
       </div>
@@ -82,7 +82,7 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
         <tbody>
           {(["home", "away"] as const).map((side) => (
             <tr key={side}>
-              <td className="py-0.5 text-left text-sky">{side === "home" ? "You" : "Mystery"}</td>
+              <td className="py-0.5 text-left text-sky">{side === "home" ? "You" : "Them"}</td>
               {g[side].quarters.map((q, i) => (
                 <td key={i} className="varsity">
                   {i < stage ? q : "–"}
@@ -97,7 +97,7 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
   );
 }
 
-export function ResultView({ result, animate }: { result: SFResult; animate: boolean }) {
+export function ResultView({ result, animate, actions }: { result: SFResult; animate: boolean; actions?: React.ReactNode }) {
   const periods = result.featured.home.quarters.length;
   const [stage, setStage] = useState(animate ? 0 : periods);
   useEffect(() => {
@@ -143,8 +143,8 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
 
       <motion.section {...reveal(1)}>
         <h2 className="mb-3 text-xl font-extrabold">Matchups</h2>
-        <p className="mb-3 text-sm text-ink-soft">The Mystery Five tonight: {result.theme}.</p>
         <LineupBoard
+          opponent={result.opponent}
           clues={result.clues}
           lineup={result.lineup}
           pending={null}
@@ -153,7 +153,7 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
           dragOver={null}
           onPreview={() => {}}
           onLock={() => {}}
-          result={{ mystery: result.mystery, game: result.featured }}
+          result={result.featured}
         />
       </motion.section>
 
@@ -165,17 +165,17 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
               <span className="h-2.5 w-5 rounded-full bg-coral" /> Your five
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-5 rounded-full bg-ink" /> Mystery Five
+              <span className="h-2 w-5 rounded-full bg-ink" /> {result.theme}
             </span>
           </p>
         </div>
-        <GradeBars grades={result.grades} compare={result.mysteryGrades} compareLabel="Mystery Five" />
+        <GradeBars grades={result.grades} compare={result.opponentGrades} compareLabel={result.theme} />
       </motion.section>
 
       <motion.section {...reveal(3)} className="grid grid-cols-[minmax(0,1fr)] gap-4">
         <h2 className="text-xl font-extrabold">Box score</h2>
         <BoxScore title="Your five" lineup={result.lineup} box={result.featured.home} />
-        <BoxScore title="Mystery Five" lineup={result.mystery} box={result.featured.away} />
+        <BoxScore title={`The ${result.theme}`} lineup={result.opponent} box={result.featured.away} />
       </motion.section>
 
       <motion.section
@@ -187,8 +187,11 @@ export function ResultView({ result, animate }: { result: SFResult; animate: boo
           <p className="text-sm">No spoilers, just the score and your grades.</p>
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">
-          <ShareButton text={result.share} />
-          <Countdown className="text-sm font-semibold" />
+          <div className="flex flex-wrap gap-2">
+            <ShareButton text={result.share} />
+            {actions}
+          </div>
+          {result.mode === "daily" && <Countdown className="text-sm font-semibold" />}
         </div>
       </motion.section>
     </div>

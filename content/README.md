@@ -15,13 +15,13 @@ If a date is missing, the server generates that day's puzzle from the date itsel
 | `npm run puzzle -- set 2026-12-25 --mystery "PG:Name,SG:Name,SF:Name,PF:Name,C:Name" --theme "Christmas Classics"` | Sets any or all Mystery Five slots and the theme shown to players. |
 | `npm run puzzle -- reroll 2026-12-25` | Replaces the day with a fresh random puzzle. |
 
-Names are case- and accent-insensitive ("nikola jokic" works). Basketball-Reference ids (`jokicni01`) work too. Only players in `src/data/sf-players.json` can be used; that file is rebuilt with `npm run data`.
+Every entry is one season of one player. Write "2016 Stephen Curry" (season end year: 2016 = the 2015-16 season), or just "Stephen Curry" for his best season in the pool. Names are case- and accent-insensitive ("2023 nikola jokic" works), and version ids like `curryst01-2016` work too. Only versions in `src/data/sf-players.json` can be used; `npm run puzzle -- show <date>` lists what a day uses, and the file is rebuilt with `npm run data`.
 
 ## Starting Five format
 
 ```json
 "2026-12-25": {
-  "spins": ["id1", "id2", "id3", "id4", "id5", "id6"],
+  "spins": ["curryst01-2016", "id2", "id3", "id4", "id5", "id6"],
   "mystery": { "PG": "id", "SG": "id", "SF": "id", "PF": "id", "C": "id" },
   "theme": "Christmas Classics"
 }

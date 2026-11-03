@@ -25,7 +25,7 @@ const sf = readSF();
 const resolve = (name: string) => findPlayer(name)?.id ?? die(`No player in the pool matches "${name.trim()}".`);
 const describe = (id: string) => {
   const p = playerById(id);
-  return p ? `${p.name} (${p.pos}, ${p.tier})` : `${id} (unknown!)`;
+  return p ? `${p.season} ${p.name} (${p.team.abbr}, ${p.pos}, ${p.tier})` : `${id} (unknown!)`;
 };
 
 if (cmd === "reroll") {

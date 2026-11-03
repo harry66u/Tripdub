@@ -1,5 +1,5 @@
 import { addDays } from "@/lib/day";
-import { SLOTS, type SFPlayer } from "../types";
+import { pidOf, SLOTS, type SFPlayer } from "../types";
 import { generateSFPuzzle, type SFPuzzle } from "./generate";
 
 export type SFSchedule = { version: 1; days: Record<string, SFPuzzle> };
@@ -7,11 +7,11 @@ export type SFSchedule = { version: 1; days: Record<string, SFPuzzle> };
 export const NO_REPEAT_DAYS = 45;
 export const RUNWAY_WARNING_DAYS = 60;
 
-/** Spin ids used in the `NO_REPEAT_DAYS - 1` days before `date`. */
+/** Players (Basketball-Reference ids) spun in the `NO_REPEAT_DAYS - 1` days before `date`. */
 export function recentSpins(schedule: SFSchedule, date: string): Set<string> {
   const recent = new Set<string>();
   for (let i = 1; i < NO_REPEAT_DAYS; i++) {
-    schedule.days[addDays(date, -i)]?.spins.forEach((id) => recent.add(id));
+    schedule.days[addDays(date, -i)]?.spins.forEach((id) => recent.add(pidOf(id)));
   }
   return recent;
 }
@@ -49,11 +49,11 @@ export function checkSchedule(
       if (!id) errors.push(`${where}: Mystery Five missing ${SLOTS[i]}`);
       else if (!ids.has(id)) errors.push(`${where}: unknown mystery player "${id}"`);
     }
-    if (new Set(m).size !== 5) errors.push(`${where}: duplicate Mystery Five player`);
-    if (m.some((id) => id && d.spins?.includes(id))) errors.push(`${where}: a Mystery Five player is also a spin`);
+    const pids = [...(d.spins ?? []), ...m.filter(Boolean)].map((id) => pidOf(id as string));
+    if (new Set(pids).size !== pids.length) errors.push(`${where}: the same player appears twice`);
     if (!d.theme) errors.push(`${where}: missing theme`);
     const recent = recentSpins(schedule, date);
-    const repeats = (d.spins ?? []).filter((id) => recent.has(id));
+    const repeats = (d.spins ?? []).filter((id) => recent.has(pidOf(id)));
     if (repeats.length) warnings.push(`${where}: ${repeats.join(", ")} spun within the last ${NO_REPEAT_DAYS} days`);
   }
   const last = dates[dates.length - 1];

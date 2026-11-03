@@ -7,20 +7,35 @@ import { replay, RunError, type Action } from "../engine/run";
 import { shareText } from "../engine/share";
 import { evaluateMatchup, type GameResult } from "../engine/sim";
 import { summarize } from "../engine/summary";
-import { playerById } from "./data";
+import { playerById, POOL } from "./data";
+import { generateSFPuzzle, type SFPuzzle } from "./generate";
 import { getSFPuzzle } from "./puzzle";
 
-export type RunToken = { v: 1; date: string; device: string; actions: Action[] };
+export type Mode = "daily" | "unlimited";
+
+export type RunToken = {
+  v: 2;
+  mode: Mode;
+  date: string;
+  /** Random per unlimited game; "" for the daily */
+  salt: string;
+  /** Hash of the puzzle the run was dealt, so edits to the schedule can't change a run midway */
+  ph: number;
+  device: string;
+  actions: Action[];
+};
 
 export type SFResult = {
+  mode: Mode;
   date: string;
-  puzzleNumber: number;
+  /** Daily puzzle number; null in unlimited */
+  puzzleNumber: number | null;
   theme: string;
   lineup: Lineup;
-  mystery: Lineup;
+  opponent: Lineup;
   clues: Record<Slot, Clue>;
   grades: Grades;
-  mysteryGrades: Grades;
+  opponentGrades: Grades;
   winProb: number;
   meanMargin: number;
   featured: GameResult;
@@ -29,6 +44,14 @@ export type SFResult = {
   total: number | null;
   share: string;
 };
+
+export function runPuzzle(t: Pick<RunToken, "mode" | "date" | "salt">): SFPuzzle {
+  return t.mode === "daily" ? getSFPuzzle(t.date) : generateSFPuzzle(t.date, POOL, new Set(), t.salt);
+}
+
+export function puzzleHash(p: SFPuzzle): number {
+  return hashSeed(p.theme, ...p.spins, ...SLOTS.map((s) => p.mystery[s]));
+}
 
 export function lineupFromIds(ids: Partial<Record<Slot, string>>): Lineup {
   return Object.fromEntries(
@@ -40,44 +63,64 @@ export function lineupFromIds(ids: Partial<Record<Slot, string>>): Lineup {
   ) as Lineup;
 }
 
-export function mysteryClues(mystery: Lineup): Record<Slot, Clue> {
-  return Object.fromEntries(SLOTS.map((s) => [s, clueFor(mystery[s])])) as Record<Slot, Clue>;
+export function opponentClues(opponent: Lineup): Record<Slot, Clue> {
+  return Object.fromEntries(SLOTS.map((s) => [s, clueFor(opponent[s])])) as Record<Slot, Clue>;
 }
 
-/** Score a finished daily run. Pure: the same token always produces the same result. */
+/** The first handful of finishers don't get a percentile: "Top 1%" of one player means nothing. */
+export function rankFor(rank: { percentile: number; total: number } | null): { percentile: number | null; total: number | null } {
+  if (!rank) return { percentile: null, total: null };
+  return { percentile: rank.total >= 5 ? rank.percentile : null, total: rank.total };
+}
+
+/** Score a finished run. Pure: the same token always produces the same result. */
 export function finishRun(token: RunToken): SFResult {
-  const puzzle = getSFPuzzle(token.date);
+  const puzzle = runPuzzle(token);
+  if (puzzleHash(puzzle) !== token.ph) throw new RunError("This puzzle was updated. Reload to start it fresh.");
   const view = replay(puzzle.spins, token.actions);
-  if (!view.done) throw new RunError("Fill all five slots before you simulate");
+  if (!view.done) throw new RunError("Fill all five slots before you play");
   const lineup = lineupFromIds(view.lineup);
-  const mystery = lineupFromIds(puzzle.mystery);
-  const ev = evaluateMatchup(lineup, mystery, hashSeed("sf-eval", token.date, ...SLOTS.map((s) => lineup[s].id)));
+  const opponent = lineupFromIds(puzzle.mystery);
+  const seed = hashSeed("sf-eval", token.date, token.salt, ...SLOTS.map((s) => lineup[s].id));
+  const ev = evaluateMatchup(lineup, opponent, seed);
   const grades = gradeLineup(Object.values(lineup));
-  const won = ev.featured.home.score > ev.featured.away.score;
-  const n = puzzleNumber(token.date);
+  const n = token.mode === "daily" ? puzzleNumber(token.date) : null;
   return {
+    mode: token.mode,
     date: token.date,
     puzzleNumber: n,
     theme: puzzle.theme,
     lineup,
-    mystery,
-    clues: mysteryClues(mystery),
+    opponent,
+    clues: opponentClues(opponent),
     grades,
-    mysteryGrades: gradeLineup(Object.values(mystery)),
+    opponentGrades: gradeLineup(Object.values(opponent)),
     winProb: ev.winProb,
     meanMargin: ev.meanMargin,
     featured: ev.featured,
-    summary: summarize(ev, lineup, mystery, { home: "your five", away: "the Mystery Five" }),
+    summary: summarize(ev, lineup, opponent, { home: "your five", away: `the ${puzzle.theme}` }),
     percentile: null,
     total: null,
-    share: shareText({
-      puzzleNumber: n,
-      won,
-      homeScore: ev.featured.home.score,
-      awayScore: ev.featured.away.score,
-      winProb: ev.winProb,
-      grades,
-      percentile: null,
-    }),
+    share: shareFor(n, puzzle.theme, ev.featured, ev.winProb, grades, null),
   };
+}
+
+export function shareFor(
+  puzzleNumber: number | null,
+  theme: string,
+  g: GameResult,
+  winProb: number,
+  grades: Grades,
+  percentile: number | null,
+): string {
+  return shareText({
+    puzzleNumber,
+    opponent: theme,
+    won: g.home.score > g.away.score,
+    homeScore: g.home.score,
+    awayScore: g.away.score,
+    winProb,
+    grades,
+    percentile,
+  });
 }

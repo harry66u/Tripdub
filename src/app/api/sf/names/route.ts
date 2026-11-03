@@ -2,9 +2,15 @@ import { POOL } from "@/games/starting-five/server/data";
 
 export const dynamic = "force-static";
 
-/** Names and tiers only, for the wheel's decoy segments. No stats, no schedule. */
+/** One face per player (name, tier, NBA.com id) for the roulette. No stats, no schedule. */
 export function GET() {
-  const names = POOL.map((p) => ({ n: p.name, t: p.tier }));
+  const seen = new Set<string>();
+  const names = [];
+  for (const p of POOL) {
+    if (seen.has(p.pid)) continue;
+    seen.add(p.pid);
+    names.push({ n: p.name, t: p.tier, i: p.nbaId });
+  }
   return new Response(JSON.stringify(names), {
     headers: { "content-type": "application/json", "cache-control": "public, max-age=86400, s-maxage=86400" },
   });

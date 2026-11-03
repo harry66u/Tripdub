@@ -5,22 +5,26 @@ export type Tier = "legend" | "allstar" | "starter" | "role";
 
 export type RatingKey = "sco" | "ply" | "reb" | "per" | "rim" | "spc";
 
+/** One season of one player, e.g. 2016 Stephen Curry. */
 export interface SFPlayer {
-  /** Basketball-Reference player id, e.g. "jordami01" */
+  /** `${pid}-${season}`, e.g. "curryst01-2016" */
   id: string;
+  /** Basketball-Reference player id, e.g. "curryst01" */
+  pid: string;
   /** NBA.com person id, used for the official headshot. */
   nbaId: number | null;
   name: string;
-  /** Natural position label, e.g. "PG" or "SF/PF" */
+  /** Season end year (2016 = the 2015-16 season) */
+  season: number;
+  team: { abbr: string; name: string };
+  /** Position that season, e.g. "PG" or "SF/PF" */
   pos: string;
   heightIn: number;
-  /** Prime seasons, as season end years (1996 = 1995-96) */
-  prime: { from: number; to: number };
   tier: Tier;
   ovr: number;
-  /** Decade of the prime midpoint, e.g. 1990 */
+  /** Decade the season started in, e.g. 2010 */
   era: number;
-  /** Real per-game averages over the prime. null = not tracked in that era. */
+  /** Real per-game averages that season. null = not tracked in that era. */
   line: {
     pts: number | null;
     reb: number | null;
@@ -32,13 +36,27 @@ export interface SFPlayer {
     ftPct: number | null;
     tsPct: number | null;
   };
-  /** Era-relative ratings, 0-99 */
+  /** Era-relative ratings for that season, 0-99 */
   r: Record<RatingKey, number>;
   /** Share of shots by type; sums to 1 */
   shot: { rim: number; mid: number; three: number };
   /** Usage rate as a fraction */
   usg: number;
-  acc: { mvp: number; allStar: number; allNba: number; allDef: number; dpoy: number; hof: boolean };
+  /** Honors that season */
+  acc: {
+    mvp: boolean;
+    dpoy: boolean;
+    allStar: boolean;
+    allNba: "1st" | "2nd" | "3rd" | null;
+    allDef: "1st" | "2nd" | null;
+    hof: boolean;
+  };
+  career: { allStar: number; allNba: number; mvp: number };
+}
+
+/** Player id (Basketball-Reference) from a version id like "curryst01-2016". */
+export function pidOf(versionId: string): string {
+  return versionId.slice(0, versionId.lastIndexOf("-"));
 }
 
 export type Lineup = Record<Slot, SFPlayer>;

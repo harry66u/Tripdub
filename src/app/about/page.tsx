@@ -13,8 +13,9 @@ export default function About() {
       <h2 className="mt-10 text-2xl font-extrabold">Starting Five</h2>
       <div className="mt-3 grid gap-3 leading-relaxed">
         <p>
-          Each player is shown at his prime: his best seasons (up to five) by Win Shares, with at least 1,000 minutes each. The
-          per-game line on his card is his real average over those seasons.
+          Every card is one real season, like 2016 Stephen Curry or 2020 Damian Lillard, with that season’s real per-game
+          numbers and team. Each player comes in up to four of his best seasons. Older eras only include the biggest names,
+          and spins lean toward the last twenty years.
         </p>
         <p>
           Ratings compare each player to the league in his own seasons, so a 1960s rebounder is measured against 1960s
@@ -24,8 +25,8 @@ export default function About() {
         </p>
         <p>
           Your lineup is graded on scoring, defense, rebounding, spacing, and playmaking. A lineup without a real playmaker or
-          rim protector grades worse there. There’s no out-of-position penalty, but each slot guards and attacks the Mystery
-          Five player in the same slot, so matchups matter.
+          rim protector grades worse there. There’s no out-of-position penalty, but each slot guards and attacks the opposing
+          player in the same slot, so matchups matter.
         </p>
         <p>
           The game is simulated possession by possession 400 times. Your score is your win probability, and the game we

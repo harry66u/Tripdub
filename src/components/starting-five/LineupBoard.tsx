@@ -1,13 +1,14 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import type { Clue } from "@/games/starting-five/engine/archetype";
-import { formatPrime } from "@/games/starting-five/engine/format";
 import type { GameResult, PlayerBox } from "@/games/starting-five/engine/sim";
 import { SLOTS, type Lineup, type SFPlayer, type Slot } from "@/games/starting-five/types";
 import { Headshot } from "./Headshot";
+import { TeamLogo } from "./TeamArt";
 
 type Props = {
+  opponent: Lineup;
   clues: Record<Slot, Clue>;
   lineup: Partial<Record<Slot, SFPlayer>>;
   /** The revealed player waiting for a slot */
@@ -17,7 +18,8 @@ type Props = {
   dragOver: Slot | null;
   onPreview: (s: Slot) => void;
   onLock: (s: Slot) => void;
-  result?: { mystery: Lineup; game: GameResult };
+  /** After the game: box score lines on both sides */
+  result?: GameResult;
 };
 
 function Lock() {
@@ -29,10 +31,10 @@ function Lock() {
   );
 }
 
-function BoxLine({ b }: { b: PlayerBox }) {
+function BoxLine({ b, dark }: { b: PlayerBox; dark?: boolean }) {
   return (
-    <span className="tnum text-xs font-semibold text-ink-soft">
-      <span className="varsity text-sm text-ink">{b.pts}</span> pts · {b.reb} reb · {b.ast} ast
+    <span className={`tnum text-xs font-semibold ${dark ? "text-sky" : "text-ink-soft"}`}>
+      <span className={`varsity text-sm ${dark ? "text-white" : "text-ink"}`}>{b.pts}</span> pts, {b.reb} reb, {b.ast} ast
     </span>
   );
 }
@@ -40,7 +42,7 @@ function BoxLine({ b }: { b: PlayerBox }) {
 export function SlotBadge({ slot, active }: { slot: Slot; active?: boolean }) {
   return (
     <span
-      className={`varsity grid h-12 w-12 shrink-0 place-items-center rounded-full border-[2.5px] border-ink text-[17px] shadow-[2px_3px_0_0_var(--color-ink)] transition-colors ${
+      className={`varsity grid h-11 w-11 shrink-0 place-items-center rounded-full border-[2.5px] border-ink text-[16px] shadow-[2px_3px_0_0_var(--color-ink)] transition-colors sm:h-12 sm:w-12 sm:text-[17px] ${
         active ? "bg-coral text-white" : "bg-sky text-ink"
       }`}
     >
@@ -49,20 +51,20 @@ export function SlotBadge({ slot, active }: { slot: Slot; active?: boolean }) {
   );
 }
 
-/** Five rows: your slot, the matchup, and the Mystery Five's clue (revealed after the game). */
-export function LineupBoard({ clues, lineup, pending, preview, busy, dragOver, onPreview, onLock, result }: Props) {
+/** Five rows: your slot against the opposing player in the same slot. */
+export function LineupBoard({ opponent, clues, lineup, pending, preview, busy, dragOver, onPreview, onLock, result }: Props) {
   return (
-    <ol className="grid gap-2.5" aria-label="Your lineup against the Mystery Five">
-      {SLOTS.map((slot, i) => {
+    <ol className="grid gap-2.5" aria-label="Your lineup against tonight’s opponent">
+      {SLOTS.map((slot) => {
         const mine = lineup[slot];
         const open = !mine && !!pending && !result;
         const previewing = open && preview === slot;
-        const theirs = result?.mystery[slot];
+        const theirs = opponent[slot];
         return (
           <li
             key={slot}
             data-slot={open ? slot : undefined}
-            className={`grid grid-cols-[3rem_1fr_auto_1fr] items-center gap-2 rounded-[20px] border-[2.5px] border-ink bg-white p-2 sm:gap-3 sm:p-2.5 ${
+            className={`grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1.1fr)] items-center gap-2 rounded-[20px] border-[2.5px] border-ink bg-white p-2 sm:grid-cols-[3rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-3 sm:p-2.5 ${
               dragOver === slot ? "bg-coral-soft" : ""
             } ${open && !previewing ? "slot-invite" : "shadow-[var(--shadow-pop-sm)]"}`}
           >
@@ -78,28 +80,20 @@ export function LineupBoard({ clues, lineup, pending, preview, busy, dragOver, o
                 >
                   <Headshot player={mine} size="sm" className="hidden sm:grid" />
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 truncate font-bold leading-tight">
-                      <span className="truncate">{mine.name}</span>
+                    <p className="flex items-center gap-1.5 font-bold leading-tight">
+                      <span className="min-w-0 break-words">
+                        <span className="varsity mr-1 text-xs text-coral-deep">{mine.season}</span>
+                        {mine.name}
+                      </span>
                       {!result && <Lock />}
                     </p>
-                    {result ? (
-                      <BoxLine b={result.game.home.players[slot]} />
-                    ) : (
-                      <p className="truncate text-xs text-ink-soft">
-                        {mine.pos}, prime {formatPrime(mine.prime)}
-                      </p>
-                    )}
+                    {result ? <BoxLine b={result.home.players[slot]} /> : <p className="truncate text-xs text-ink-soft">{mine.team.abbr}, {mine.pos}</p>}
                   </div>
                 </motion.div>
               ) : previewing ? (
-                <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
-                  <span className="truncate font-bold text-ink/60">{pending!.name}</span>
-                  <button
-                    type="button"
-                    className="btn btn-coral px-3 py-1 text-sm"
-                    disabled={busy}
-                    onClick={() => onLock(slot)}
-                  >
+                <div className="flex min-w-0 flex-col items-start gap-1">
+                  <span className="truncate text-sm font-bold text-ink/60">{pending!.name}</span>
+                  <button type="button" className="btn btn-coral px-3 py-1 text-sm" disabled={busy} onClick={() => onLock(slot)}>
                     Lock in at {slot}
                   </button>
                 </div>
@@ -117,36 +111,22 @@ export function LineupBoard({ clues, lineup, pending, preview, busy, dragOver, o
               )}
             </div>
 
-            <span className="varsity px-0.5 text-xs text-ink-soft" aria-hidden>
-              vs
-            </span>
-
-            <div className="min-w-0">
-              <AnimatePresence mode="wait" initial={false}>
-                {theirs ? (
-                  <motion.div
-                    key="revealed"
-                    initial={{ rotateX: 90, opacity: 0 }}
-                    animate={{ rotateX: 0, opacity: 1 }}
-                    transition={{ delay: 0.12 * i, type: "spring", stiffness: 260, damping: 22 }}
-                    className="flex min-w-0 items-center gap-2 rounded-xl bg-ink px-2 py-1.5 text-white sm:px-2.5"
-                  >
-                    <Headshot player={theirs} size="sm" className="hidden border-white sm:grid" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold leading-tight">{theirs.name}</p>
-                      <span className="tnum text-xs text-sky">
-                        <span className="varsity text-sm text-white">{result!.game.away.players[slot].pts}</span> pts ·{" "}
-                        {result!.game.away.players[slot].reb} reb · {result!.game.away.players[slot].ast} ast
-                      </span>
-                    </div>
-                  </motion.div>
+            <div className="flex min-w-0 items-center gap-2 rounded-xl bg-ink px-2 py-1.5 text-white">
+              <Headshot player={theirs} size="sm" className="border-white" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold leading-tight break-words">
+                  <span className="varsity mr-1 text-xs text-butter">{theirs.season}</span>
+                  {theirs.name}
+                </p>
+                {result ? (
+                  <BoxLine b={result.away.players[slot]} dark />
                 ) : (
-                  <motion.div key="clue" exit={{ rotateX: -90, opacity: 0 }} className="min-w-0 rounded-xl bg-ink px-3 py-1.5 text-white">
-                    <p className="text-[11px] font-semibold text-sky">{clues[slot].era}</p>
-                    <p className="truncate text-sm font-bold leading-tight">{clues[slot].archetype}</p>
-                  </motion.div>
+                  <p className="text-[11px] font-semibold leading-tight text-sky">
+                    {theirs.team.abbr}, {clues[slot].archetype}
+                  </p>
                 )}
-              </AnimatePresence>
+              </div>
+              <TeamLogo team={theirs.team} className="hidden h-7 w-7 shrink-0 rounded-full bg-white p-0.5 sm:block" />
             </div>
           </li>
         );

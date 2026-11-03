@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/server/db", () => ({
   recordDailyResult: vi.fn(async () => ({ percentile: 0.75, total: 41 })),
 }));
+// The first few finishers shouldn't brag "Top 1%": covered in shareForResult tests below.
 
 import { recordDailyResult } from "@/lib/server/db";
 import { POST as start } from "@/app/api/sf/daily/start/route";
@@ -37,14 +38,35 @@ const FIVE = SLOTS.map((slot) => ({ t: "place", slot }));
 describe("daily Starting Five API", () => {
   beforeEach(() => vi.mocked(recordDailyResult).mockClear());
 
-  it("start reveals only the first spin and the clues", async () => {
+  it("start shows the opposing five but only the first spin", async () => {
     const { status, body } = await json(await post(start, { device: DEVICE }));
     expect(status).toBe(200);
     const puzzle = getSFPuzzle(puzzleDate());
+    expect(body.mode).toBe("daily");
     expect(body.current.id).toBe(puzzle.spins[0]);
+    for (const s of SLOTS) expect(body.opponent[s].id).toBe(puzzle.mystery[s]);
     const text = JSON.stringify(body);
-    for (const id of [...puzzle.spins.slice(1), ...Object.values(puzzle.mystery)]) expect(text).not.toContain(id);
+    for (const id of puzzle.spins.slice(1)) expect(text).not.toContain(id);
     expect(Object.keys(body.clues).sort()).toEqual([...SLOTS].sort());
+  });
+
+  it("unlimited games deal a fresh puzzle each time and are never recorded", async () => {
+    const a = await json(await post(start, { device: DEVICE, mode: "unlimited" }));
+    const b = await json(await post(start, { device: DEVICE, mode: "unlimited" }));
+    expect(a.body.mode).toBe("unlimited");
+    const ids = (x: typeof a) => [x.body.current.id, ...SLOTS.map((s) => x.body.opponent[s].id)].join();
+    expect(ids(a)).not.toBe(ids(b));
+    let token = a.body.token;
+    for (const action of FIVE) token = (await json(await post(step, { token, action }))).body.token;
+    const done = await json(await post(finish, { token }));
+    expect(done.status).toBe(200);
+    expect(done.body.mode).toBe("unlimited");
+    expect(done.body.percentile).toBeNull();
+    expect(recordDailyResult).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown mode", async () => {
+    expect((await post(start, { device: DEVICE, mode: "ranked" })).status).toBe(400);
   });
 
   it("rejects a bad device id", async () => {
@@ -82,9 +104,20 @@ describe("daily Starting Five API", () => {
     expect(a.body.featured.home.score).toBeGreaterThan(50);
     expect(a.body.percentile).toBe(0.75);
     expect(a.body.share).toContain("Top 25%");
+    expect(a.body.opponent.PG.name).toBeTruthy();
     expect(b.body.winProb).toBe(a.body.winProb);
     expect(vi.mocked(recordDailyResult).mock.calls[0]).toEqual(vi.mocked(recordDailyResult).mock.calls[1]);
     const call = vi.mocked(recordDailyResult).mock.calls[0][0];
     expect(call).toMatchObject({ game: "starting-five", date: puzzleDate(), device: DEVICE });
+  });
+});
+
+import { rankFor } from "@/games/starting-five/server/finish";
+
+describe("rankFor", () => {
+  it("hides the percentile until enough players have finished", () => {
+    expect(rankFor({ percentile: 1, total: 1 })).toEqual({ percentile: null, total: 1 });
+    expect(rankFor({ percentile: 0.6, total: 5 })).toEqual({ percentile: 0.6, total: 5 });
+    expect(rankFor(null)).toEqual({ percentile: null, total: null });
   });
 });

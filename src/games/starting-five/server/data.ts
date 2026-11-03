@@ -19,9 +19,22 @@ export function normalizeName(s: string): string {
     .trim();
 }
 
-const BY_NAME = new Map(POOL.map((p) => [normalizeName(p.name), p]));
+const BY_NAME = new Map<string, SFPlayer[]>();
+for (const p of POOL) {
+  const k = normalizeName(p.name);
+  BY_NAME.set(k, [...(BY_NAME.get(k) ?? []), p]);
+}
 
-/** Case- and accent-insensitive lookup by display name or Basketball-Reference id. */
-export function findPlayer(nameOrId: string): SFPlayer | undefined {
-  return BY_ID.get(nameOrId.trim()) ?? BY_NAME.get(normalizeName(nameOrId));
+/**
+ * Look up a version by id ("curryst01-2016"), "2016 Stephen Curry", "Stephen Curry 2016", or just
+ * "Stephen Curry" (his best season). Case- and accent-insensitive.
+ */
+export function findPlayer(query: string): SFPlayer | undefined {
+  const q = query.trim();
+  if (BY_ID.has(q)) return BY_ID.get(q);
+  const m = q.match(/^(\d{4})\s+(.+)$/) ?? q.match(/^(.+?)\s+(\d{4})$/);
+  const [year, name] = m ? (/^\d{4}$/.test(m[1]) ? [Number(m[1]), m[2]] : [Number(m[2]), m[1]]) : [null, q];
+  const versions = BY_NAME.get(normalizeName(name)) ?? [];
+  if (year != null) return versions.find((v) => v.season === year);
+  return versions.slice().sort((a, b) => b.ovr - a.ovr)[0];
 }

@@ -13,7 +13,9 @@ export function issueRunToken(t: RunToken): string {
 export function readRunToken(token: unknown): RunToken | null {
   if (typeof token !== "string" || token.length > 4096) return null;
   const t = verifyToken<RunToken>(token, runSecret());
-  if (!t || t.v !== 1 || !isValidDate(t.date) || !Array.isArray(t.actions) || !t.actions.every(isAction)) return null;
+  if (!t || t.v !== 2 || (t.mode !== "daily" && t.mode !== "unlimited")) return null;
+  if (!isValidDate(t.date) || typeof t.salt !== "string" || typeof t.ph !== "number") return null;
+  if (!Array.isArray(t.actions) || !t.actions.every(isAction)) return null;
   const today = puzzleDate();
   if (t.date !== today && t.date !== addDays(today, -1)) return null;
   return t;

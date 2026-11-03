@@ -9,8 +9,9 @@ Method (also explained on the About page):
 - Every stat is turned into a z-score against that season's qualified players, so each player is
   measured against his own era. Stats the league didn't track yet fall back to the closest
   available signal (no blocks/steals before 1973-74, no threes before 1979-80).
-- A player's prime = his best (up to 5) qualified seasons by Win Shares, minutes-weighted.
-- Ratings are percentile ranks within the pool, 1..99.
+- Each entry is one season of one player (a "version", e.g. 2016 Stephen Curry): his best
+  2-4 seasons by Win Shares and honors. Old-timers make the pool only if they're famous.
+- Ratings are percentile ranks within the pool of versions, 1..99.
 """
 import collections
 import csv
@@ -27,7 +28,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(ROOT, ".data-cache", "bbref")
 OUT = os.path.join(ROOT, "src", "data", "sf-players.json")
 SHORT_SEASONS = {1999, 2012, 2020, 2021}
-PRIME_SEASONS = 5
 SLOT_ORDER = ["PG", "SG", "SF", "PF", "C"]
 
 
@@ -228,70 +228,105 @@ def main():
             ovr = 0.6 * (zz("ws48") or 0) + 0.4 * (zz("per") or 0)
         return {"sco": sco, "ply": ply, "reb": reb, "per": per, "rim": rim, "spc": spc, "ovr": ovr}
 
-    # ---------- accolades ----------
-    acc = collections.defaultdict(lambda: {"mvp": 0, "allStar": 0, "allNba": 0, "allDef": 0, "dpoy": 0})
-    alldef_seasons = collections.defaultdict(dict)
+    # ---------- accolades, per season and career ----------
+    allstar_s = collections.defaultdict(set)
+    allnba_s = collections.defaultdict(dict)
+    alldef_s = collections.defaultdict(dict)
+    mvp_s = collections.defaultdict(set)
+    dpoy_s = collections.defaultdict(set)
     for r in load("All-Star Selections"):
         if r["lg"] == "NBA":
-            acc[r["player_id"]]["allStar"] += 1
+            allstar_s[r["player_id"]].add(int(r["season"]))
     for r in load("End of Season Teams"):
         if r["lg"] != "NBA":
             continue
         if r["type"] == "All-NBA":
-            acc[r["player_id"]]["allNba"] += 1
+            allnba_s[r["player_id"]][int(r["season"])] = r["number_tm"]
         elif r["type"] == "All-Defense":
-            acc[r["player_id"]]["allDef"] += 1
-            alldef_seasons[r["player_id"]][int(r["season"])] = 0.8 if r["number_tm"] == "1st" else 0.5
+            alldef_s[r["player_id"]][int(r["season"])] = r["number_tm"]
     for r in load("Player Award Shares"):
         if r["winner"] == "TRUE":
             if r["award"] == "nba mvp":
-                acc[r["player_id"]]["mvp"] += 1
+                mvp_s[r["player_id"]].add(int(r["season"]))
             elif r["award"] == "nba dpoy":
-                acc[r["player_id"]]["dpoy"] += 1
+                dpoy_s[r["player_id"]].add(int(r["season"]))
 
-    # ---------- per-player aggregation ----------
+    # Team for each season: the team a traded player played the most games for.
+    team_names = {}
+    for r in load("Team Abbrev"):
+        if r["lg"] == "NBA":
+            team_names[(int(r["season"]), r["abbreviation"])] = r["team"]
+    season_team = {}
+    for r in load("Player Totals"):
+        if r["lg"] != "NBA" or re.fullmatch(r"\dTM|TOT", r["team"]):
+            continue
+        key = (r["player_id"], int(r["season"]))
+        g = num(r["g"]) or 0
+        if key not in season_team or g > season_team[key][1]:
+            season_team[key] = (r["team"], g)
+
+    # ---------- which players, and which versions of them ----------
     by_player = collections.defaultdict(list)
     for key in season_metrics:
         by_player[key[0]].append(key)
-
     career_ws = collections.defaultdict(float)
     for key, a in adv.items():
         career_ws[key[0]] += num(a.get("ws")) or 0.0
 
-    candidates = []
-    for pid, keys in by_player.items():
-        if len(keys) < 3:
-            continue
-        a = acc[pid]
-        recent = any(s >= latest_complete - 7 for (_, s) in keys)
-        if not (a["allStar"] or a["allNba"] or a["allDef"] or career_ws[pid] >= 60 or
-                (career_ws[pid] >= 35 and recent)):
-            continue
-        prime = sorted(keys, key=lambda k: season_metrics[k]["ws"], reverse=True)[:PRIME_SEASONS]
-        prime.sort(key=lambda k: k[1])
-        w = [season_metrics[k]["mp"] for k in prime]
-        wsum = sum(w)
-        raws = [season_raw(k) for k in prime]
-        agg = {f: sum(r[f] * wi for r, wi in zip(raws, w)) / wsum for f in raws[0]}
-        # All-Defense recognition during the prime
-        bonus = sum(alldef_seasons[pid].get(k[1], 0) for k in prime) / len(prime)
-        agg["per"] += bonus
-        agg["rim"] += 0.4 * bonus
-        agg["ovr"] += 0.06 * min(a["allStar"], 15) + 0.12 * min(a["mvp"], 4) + 0.04 * min(a["allNba"], 15)
-        candidates.append((pid, prime, agg))
+    def famous_enough(pid, keys):
+        """Old-timers only if they're household names; the modern game gets a much wider net."""
+        hof = career.get(pid, {}).get("hof") == "TRUE"
+        n_as, n_nba, n_mvp = len(allstar_s[pid]), len(allnba_s[pid]), len(mvp_s[pid])
+        peak = max(keys, key=lambda k: season_metrics[k]["ws"])[1]
+        if peak < 1980:
+            return n_mvp >= 1 or n_nba >= 4
+        if peak < 2000:
+            return hof or n_nba >= 1 or n_as >= 2
+        return n_as >= 1 or n_nba >= 1 or len(alldef_s[pid]) >= 1 or career_ws[pid] >= 45 or (
+            career_ws[pid] >= 25 and peak >= latest_complete - 7)
 
-    def pct_map(field):
-        vals = sorted(c[2][field] for c in candidates)
-        n = len(vals)
-        out = {}
-        for pid, _, agg in candidates:
-            # average rank for ties
-            lo = bisect_left(vals, agg[field])
-            hi = bisect_right(vals, agg[field]) - 1
-            out[pid] = int(round(1 + 98 * ((lo + hi) / 2) / (n - 1)))
-        return out
+    versions = []  # (pid, key, raw)
+    for pid, keys in by_player.items():
+        if len(keys) < 2 or not famous_enough(pid, keys):
+            continue
+        best_ws = max(season_metrics[k]["ws"] for k in keys)
+
+        def fame(k, pid=pid):
+            s_ = k[1]
+            return (season_metrics[k]["ws"] + 3 * (s_ in allstar_s[pid]) + 2 * (s_ in allnba_s[pid])
+                    + 4 * (s_ in mvp_s[pid]))
+
+        n_as = len(allstar_s[pid])
+        old_school = len(mvp_s[pid]) >= 1 or len(allnba_s[pid]) >= 4
+        cap = 4 if (n_as >= 5 or mvp_s[pid]) else 3 if n_as >= 1 else 2
+        good = [k for k in keys if season_metrics[k]["ws"] >= 0.55 * best_ws]
+        # Seasons before 1980 only for household names, and at most two of them.
+        modern = [k for k in good if k[1] >= 1980]
+        vintage = sorted([k for k in good if k[1] < 1980], key=fame, reverse=True)[:2] if old_school else []
+        good = modern + vintage
+        if not good:
+            continue
+        for k in sorted(good, key=fame, reverse=True)[:cap]:
+            raw = season_raw(k)
+            s_ = k[1]
+            bonus = {"1st": 0.8, "2nd": 0.5}.get(alldef_s[pid].get(s_), 0) + (0.6 if s_ in dpoy_s[pid] else 0)
+            raw["per"] += bonus
+            raw["rim"] += 0.4 * bonus
+            raw["ovr"] += (0.5 * (s_ in allstar_s[pid]) + {"1st": 0.8, "2nd": 0.5, "3rd": 0.35}.get(allnba_s[pid].get(s_), 0)
+                           + 1.0 * (s_ in mvp_s[pid]))
+            versions.append((pid, k, raw))
 
     from bisect import bisect_left, bisect_right
+
+    def pct_map(field):
+        vals = sorted(v[2][field] for v in versions)
+        n = len(vals)
+        out = {}
+        for pid, k, raw in versions:
+            lo = bisect_left(vals, raw[field])
+            hi = bisect_right(vals, raw[field]) - 1
+            out[k] = int(round(1 + 98 * ((lo + hi) / 2) / (n - 1)))
+        return out
 
     rating = {f: pct_map(f) for f in ["sco", "ply", "reb", "per", "rim", "spc", "ovr"]}
 
@@ -304,116 +339,92 @@ def main():
             return "starter"
         return "role"
 
-    players = []
-    for pid, prime, agg in candidates:
+    POS_FALLBACK = {"G": "SG", "F": "SF", "C": "C", "G-F": "SG/SF", "F-G": "SG/SF", "F-C": "PF/C", "C-F": "PF/C"}
+    out_versions = []
+    for pid, k, raw in versions:
         c = career.get(pid, {})
-        t_rows = [totals[k] for k in prime]
-        g_sum = sum(num(r["g"]) or 0 for r in t_rows)
-
-        def per_game(col, rows=t_rows):
-            vals = [(num(r[col]), num(r["g"]) or 0) for r in rows]
-            vals = [(v, gg) for v, gg in vals if v is not None]
-            gg = sum(x[1] for x in vals)
-            return round(sum(x[0] for x in vals) / gg, 1) if gg else None
-
-        fga = sum(num(r["fga"]) or 0 for r in t_rows)
-        fta = sum(num(r["fta"]) or 0 for r in t_rows)
-        ft = sum(num(r["ft"]) or 0 for r in t_rows)
-        pts = sum(num(r["pts"]) or 0 for r in t_rows)
-        three_rows = [r for r in t_rows if int(r["season"]) >= 1980 and num(r["x3pa"]) is not None]
-        fg3a_tot = sum(num(r["x3pa"]) for r in three_rows)
-        fg3_tot = sum(num(r["x3p"]) or 0 for r in three_rows)
-        g3 = sum(num(r["g"]) or 0 for r in three_rows)
+        t = totals[k]
+        m = season_metrics[k]
+        g = num(t["g"]) or 1
+        pg = lambda col: None if num(t.get(col)) is None else round(num(t[col]) / g, 1)
+        fga, fta, ft, pts = (num(t[c_]) or 0 for c_ in ("fga", "fta", "ft", "pts"))
+        fg3a = num(t["x3pa"]) if k[1] >= 1980 else None
+        fg3 = num(t["x3p"]) or 0
         line = {
-            "pts": per_game("pts"),
-            "reb": per_game("trb"),
-            "ast": per_game("ast"),
-            "stl": per_game("stl"),
-            "blk": per_game("blk"),
-            "fg3Pct": round(fg3_tot / fg3a_tot, 3) if fg3a_tot >= 50 else None,
-            "fg3a": round(fg3a_tot / g3, 1) if g3 and fg3a_tot >= 50 else None,
-            "ftPct": round(ft / fta, 3) if fta >= 50 else None,
+            "pts": pg("pts"),
+            "reb": pg("trb"),
+            "ast": pg("ast"),
+            "stl": pg("stl"),
+            "blk": pg("blk"),
+            "fg3Pct": round(fg3 / fg3a, 3) if fg3a and fg3a >= 25 else None,
+            "fg3a": round(fg3a / g, 1) if fg3a and fg3a >= 25 else None,
+            "ftPct": round(ft / fta, 3) if fta >= 25 else None,
             "tsPct": round(pts / (2 * (fga + 0.44 * fta)), 3) if fga else None,
         }
-        # Position: minutes-weighted mode over prime seasons
-        pos_minutes = collections.Counter()
-        for k in prime:
-            p = season_metrics[k]["pos"]
-            if p:
-                pos_minutes[p] += season_metrics[k]["mp"]
-        if pos_minutes:
-            ranked = pos_minutes.most_common()
-            pos = ranked[0][0]
-            if len(ranked) > 1 and ranked[1][1] >= 0.3 * sum(pos_minutes.values()):
-                pair = sorted([ranked[0][0], ranked[1][0]], key=SLOT_ORDER.index)
-                pos = "/".join(pair)
-        else:
-            pos = {"G": "SG", "F": "SF", "C": "C", "G-F": "SG/SF", "F-G": "SG/SF", "F-C": "PF/C",
-                   "C-F": "PF/C"}.get(c.get("pos", ""), "SF")
-        # Shot profile
-        prof = [(season_metrics[k]["rim_share"], season_metrics[k]["three_share"], season_metrics[k]["mp"])
-                for k in prime if season_metrics[k]["rim_share"] is not None]
         height = num(c.get("ht_in_in")) or 78
-        if prof:
-            wsum = sum(p[2] for p in prof)
-            rim = sum(p[0] * p[2] for p in prof) / wsum
-            three = sum((p[1] or 0) * p[2] for p in prof) / wsum
+        if m["rim_share"] is not None:
+            rim, three = m["rim_share"], m["three_share"] or 0
         else:
-            mpw = sum(season_metrics[k]["mp"] for k in prime)
-            three = sum((season_metrics[k]["x3p_ar"] or 0) * season_metrics[k]["mp"] for k in prime) / mpw
+            three = m["x3p_ar"] or 0
             rim = clip(0.25 + (height - 78) * 0.03, 0.1, 0.6) * (1 - three)
         rim, three = round(rim, 3), round(three, 3)
-        mid = round(1 - rim - three, 3)
-        # Usage
-        usg_vals = [(season_metrics[k]["usgp"], season_metrics[k]["mp"]) for k in prime if season_metrics[k]["usgp"]]
-        if usg_vals:
-            usg = sum(u * m for u, m in usg_vals) / sum(m for _, m in usg_vals) / 100
+        if m["usgp"]:
+            usg = m["usgp"] / 100
         else:
-            est = []
-            for k in prime:
-                m = season_metrics[k]
-                pace = league_pace.get(k[1], 100.0)
-                est.append(((m["fga36"] or 0) + 0.44 * (m["fta36"] or 0) + 2.5) / (pace * 0.75))
-            usg = sum(est) / len(est)
-        seasons = [k[1] for k in prime]
-        mid_start = (min(seasons) + max(seasons)) / 2 - 1
-        a = acc[pid]
+            pace = league_pace.get(k[1], 100.0)
+            usg = ((m["fga36"] or 0) + 0.44 * (m["fta36"] or 0) + 2.5) / (pace * 0.75)
+        abbr = season_team.get(k, (t["team"], 0))[0]
         nba_id = cross_ids.get(pid)
+        name = c.get("player") or t["player"]
         if nba_id is None:
-            found = shot_ids.get(name_key(c.get("player") or t_rows[0]["player"]), set())
+            found = shot_ids.get(name_key(name), set())
             nba_id = next(iter(found)) if len(found) == 1 else None
-        players.append({
-            "id": pid,
+        s_ = k[1]
+        out_versions.append({
+            "id": f"{pid}-{s_}",
+            "pid": pid,
             "nbaId": nba_id,
-            "name": c.get("player") or t_rows[0]["player"],
-            "pos": pos,
+            "name": name,
+            "season": s_,
+            "team": {"abbr": abbr, "name": team_names.get((s_, abbr), abbr)},
+            "pos": m["pos"] or POS_FALLBACK.get(c.get("pos", ""), "SF"),
             "heightIn": int(height),
-            "prime": {"from": min(seasons), "to": max(seasons)},
-            "tier": tier_for(rating["ovr"][pid]),
-            "ovr": rating["ovr"][pid],
-            "era": int(mid_start // 10 * 10),
+            "tier": tier_for(rating["ovr"][k]),
+            "ovr": rating["ovr"][k],
+            "era": int((s_ - 1) // 10 * 10),
             "line": line,
-            "r": {f: rating[f][pid] for f in ["sco", "ply", "reb", "per", "rim", "spc"]},
-            "shot": {"rim": rim, "mid": mid, "three": three},
+            "r": {f: rating[f][k] for f in ["sco", "ply", "reb", "per", "rim", "spc"]},
+            "shot": {"rim": rim, "mid": round(1 - rim - three, 3), "three": three},
             "usg": round(clip(usg, 0.08, 0.45), 3),
-            "acc": {**a, "hof": c.get("hof") == "TRUE"},
+            "acc": {
+                "mvp": s_ in mvp_s[pid],
+                "dpoy": s_ in dpoy_s[pid],
+                "allStar": s_ in allstar_s[pid],
+                "allNba": allnba_s[pid].get(s_),
+                "allDef": alldef_s[pid].get(s_),
+                "hof": c.get("hof") == "TRUE",
+            },
+            "career": {"allStar": len(allstar_s[pid]), "allNba": len(allnba_s[pid]), "mvp": len(mvp_s[pid])},
         })
 
-    # Disambiguate duplicate display names with the prime span.
-    names = collections.Counter(p["name"] for p in players)
-    for p in players:
-        if names[p["name"]] > 1:
-            p["name"] = f"{p['name']} ({p['prime']['from'] - 1}–{str(p['prime']['to'])[2:]})"
-    players.sort(key=lambda p: (-p["ovr"], strip_accents(p["name"])))
+    # Two different players with one name: add the debut year so they stay distinct.
+    pids_by_name = collections.defaultdict(set)
+    for v in out_versions:
+        pids_by_name[v["name"]].add(v["pid"])
+    for v in out_versions:
+        if len(pids_by_name[v["name"]]) > 1:
+            v["name"] = f"{v['name']} ({career.get(v['pid'], {}).get('from', '?')})"
+    out_versions.sort(key=lambda v: (-v["ovr"], strip_accents(v["name"]), v["season"]))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
-        json.dump(players, f, ensure_ascii=False, separators=(",", ":"))
-    tiers = collections.Counter(p["tier"] for p in players)
-    missing = [p["name"] for p in players if p["nbaId"] is None]
+        json.dump(out_versions, f, ensure_ascii=False, separators=(",", ":"))
+    tiers = collections.Counter(v["tier"] for v in out_versions)
+    eras = collections.Counter(v["era"] for v in out_versions)
+    missing = sorted({v["name"] for v in out_versions if v["nbaId"] is None})
     if missing:
         print(f"warning: no NBA.com id for {len(missing)} players: {', '.join(missing[:20])}")
-    print(f"wrote {len(players)} players to {os.path.relpath(OUT, ROOT)} "
-          f"(latest complete season {latest_complete}); tiers {dict(tiers)}")
+    print(f"wrote {len(out_versions)} versions of {len({v['pid'] for v in out_versions})} players "
+          f"(latest complete season {latest_complete}); tiers {dict(tiers)}; eras {dict(sorted(eras.items()))}")
 
 
 if __name__ == "__main__":

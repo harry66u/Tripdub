@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluateMatchup } from "@/games/starting-five/engine/sim";
 import { summarize } from "@/games/starting-five/engine/summary";
-import { formatLine, formatPrime, topPercent } from "@/games/starting-five/engine/format";
+import { formatLine, formatSeason, topPercent } from "@/games/starting-five/engine/format";
 import { shareText } from "@/games/starting-five/engine/share";
 import { gradeLineup } from "@/games/starting-five/engine/grades";
 import { SLOTS } from "@/games/starting-five/types";
@@ -47,9 +47,9 @@ describe("formatLine", () => {
     expect(f.some((x) => /null|undefined|NaN/.test(x.value))).toBe(false);
   });
 
-  it("formats the prime span as start year to end year", () => {
-    expect(formatPrime({ from: 1988, to: 1993 })).toBe("1987–93");
-    expect(formatPrime({ from: 2000, to: 2000 })).toBe("1999–00");
+  it("formats a season as start year to end year", () => {
+    expect(formatSeason(2016)).toBe("2015–16");
+    expect(formatSeason(2000)).toBe("1999–00");
   });
 
   it("converts a percentile to a top-percent", () => {
@@ -62,6 +62,7 @@ describe("formatLine", () => {
 describe("shareText", () => {
   const text = shareText({
     puzzleNumber: 12,
+    opponent: "Twin Towers",
     won: true,
     homeScore: 118,
     awayScore: 109,
@@ -87,8 +88,14 @@ describe("shareText", () => {
     }
   });
 
+  it("labels unlimited games without a puzzle number", () => {
+    const t = shareText({ puzzleNumber: null, opponent: "Twin Towers", won: true, homeScore: 101, awayScore: 99, winProb: 0.55, grades: gradeLineup(Object.values(home)), percentile: null });
+    expect(t.startsWith("TRIPDUB · Starting Five · Unlimited")).toBe(true);
+    expect(t).toContain("vs the Twin Towers");
+  });
+
   it("omits the percentile line when unknown", () => {
-    const t = shareText({ puzzleNumber: 1, won: false, homeScore: 100, awayScore: 104, winProb: 0.3, grades: gradeLineup(Object.values(home)), percentile: null });
+    const t = shareText({ puzzleNumber: 1, opponent: "Twin Towers", won: false, homeScore: 100, awayScore: 104, winProb: 0.3, grades: gradeLineup(Object.values(home)), percentile: null });
     expect(t).not.toContain("Top");
     expect(t).toContain("L 100–104");
   });

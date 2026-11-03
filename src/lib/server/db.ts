@@ -25,21 +25,30 @@ export async function recordDailyResult(input: {
   tiebreak: number;
   detail: Record<string, unknown>;
 }): Promise<{ percentile: number; total: number } | null> {
-  const c = db();
   const secret = process.env.DB_SERVER_SECRET;
-  if (!c || !secret) return null;
-  const { data, error } = await c.rpc("record_daily_result", {
-    p_secret: secret,
-    p_game: input.game,
-    p_date: input.date,
-    p_device: input.device,
-    p_score: input.score,
-    p_tiebreak: input.tiebreak,
-    p_detail: input.detail,
-  });
-  if (error || !data) {
-    console.error("record_daily_result failed", error?.message);
+  if (!secret) return null;
+  try {
+    const c = db();
+    if (!c) return null;
+    const { data, error } = await c
+      .rpc("record_daily_result", {
+        p_secret: secret,
+        p_game: input.game,
+        p_date: input.date,
+        p_device: input.device,
+        p_score: input.score,
+        p_tiebreak: input.tiebreak,
+        p_detail: input.detail,
+      })
+      .abortSignal(AbortSignal.timeout(3000));
+    if (error || !data) {
+      console.error("record_daily_result failed", error?.message);
+      return null;
+    }
+    return { percentile: Number(data.percentile), total: Number(data.total) };
+  } catch (e) {
+    // The game must still finish if the database is down or misconfigured.
+    console.error("record_daily_result threw", (e as Error).message);
     return null;
   }
-  return { percentile: Number(data.percentile), total: Number(data.total) };
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { Star } from "@/components/brand/Ball";
-import { formatHeight, formatLine, formatPrime } from "@/games/starting-five/engine/format";
+import { formatHeight, formatLine, formatSeason } from "@/games/starting-five/engine/format";
 import type { RatingKey, SFPlayer } from "@/games/starting-five/types";
 import { Headshot } from "./Headshot";
+import { Jersey, TeamLogo } from "./TeamArt";
 
 export const RATING_LABELS: Record<RatingKey, string> = {
   sco: "Scoring",
@@ -22,15 +23,16 @@ export const TIER_STYLE: Record<SFPlayer["tier"], { label: string; band: string;
   role: { label: "Role player", band: "bg-sky-soft", text: "text-ink" },
 };
 
-function accolades(p: SFPlayer): string[] {
+/** Honors from that season (plus the Hall of Fame). */
+export function accolades(p: SFPlayer): string[] {
   const out: string[] = [];
-  if (p.acc.mvp) out.push(`${p.acc.mvp}× MVP`);
-  if (p.acc.dpoy) out.push(`${p.acc.dpoy}× DPOY`);
-  if (p.acc.allNba) out.push(`${p.acc.allNba}× All-NBA`);
-  if (p.acc.allStar) out.push(`${p.acc.allStar}× All-Star`);
-  if (p.acc.allDef && !p.acc.dpoy) out.push(`${p.acc.allDef}× All-Defense`);
+  if (p.acc.mvp) out.push("MVP");
+  if (p.acc.dpoy) out.push("DPOY");
+  if (p.acc.allNba) out.push(`All-NBA ${p.acc.allNba}`);
+  if (p.acc.allStar) out.push("All-Star");
+  if (p.acc.allDef && !p.acc.dpoy) out.push(`All-Defense ${p.acc.allDef}`);
   if (p.acc.hof) out.push("Hall of Fame");
-  return out.slice(0, 3);
+  return out.slice(0, 4);
 }
 
 export function RatingBar({ label, value }: { label: string; value: number }) {
@@ -82,16 +84,24 @@ export function PlayerCard({ player, className = "", footer, onPointerDown }: Pr
           )}
           {tier.label}
         </span>
-        <span className="text-sm font-semibold">Prime {formatPrime(player.prime)}</span>
+        <span className="text-sm font-semibold">{formatSeason(player.season)} season</span>
       </div>
       <div className="px-4 pt-4 pb-4 sm:px-5">
-        <div data-grip className="relative touch-none select-none">
+        <div data-grip className="relative select-none">
           <Headshot player={player} size="lg" />
           <span className="varsity absolute top-2.5 right-2.5 rounded-xl border-2 border-ink bg-white px-2 py-0.5 text-lg shadow-[var(--shadow-pop-sm)]">
             {player.pos}
           </span>
+          <span className="absolute top-2.5 left-2.5 grid h-11 w-11 place-items-center rounded-full border-2 border-ink bg-white p-1 empty:hidden">
+            <TeamLogo team={player.team} className="h-full w-full" />
+          </span>
+          <Jersey team={player.team} className="absolute bottom-2 left-2.5 h-14 w-12 drop-shadow-[2px_3px_0_var(--color-ink)]" />
         </div>
-        <h3 className="mt-3 text-[1.75rem] leading-[1.05] font-extrabold tracking-tight text-balance">{player.name}</h3>
+        <h3 className="mt-3 text-[1.75rem] leading-[1.05] font-extrabold tracking-tight text-balance">
+          <span className="varsity mr-2 text-[1.35rem] text-coral-deep">{player.season}</span>
+          {player.name}
+        </h3>
+        <p className="mt-0.5 text-sm font-semibold text-ink-soft">{player.team.name}</p>
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-semibold">
           <span className="rounded-full bg-wash px-2 py-0.5 text-ink-soft">{formatHeight(player.heightIn)}</span>
           {acc.map((a) => (

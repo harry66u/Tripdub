@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 
 const STEPS = [
-  ["Spin", "The wheel lands on a real NBA player, shown at his prime with his real numbers."],
-  ["Place", "Lock him into any open slot. Each slot guards and attacks the Mystery Five player in that same slot, so match your stoppers to their scorers."],
-  ["Re-spin once", "Pass on one player per game. Everyone gets the same spins in the same order today."],
-  ["Play", "We simulate the game 400 times. Your score is your win probability against the Mystery Five."],
+  ["Spin", "Faces flash by until one lands: a real NBA player from one season, like 2016 Stephen Curry, with that season’s real numbers."],
+  ["Place", "Lock him into any open slot. Each slot guards and attacks the opposing player in that same slot, and you can see exactly who they are."],
+  ["Re-spin once", "Pass on one player per game."],
+  ["Play", "We simulate the game 400 times. Your score is your win probability."],
 ] as const;
 
 export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -39,6 +39,7 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
         </ol>
         <p className="mt-5 rounded-2xl bg-wash px-4 py-3 text-sm">
           There’s no penalty for playing someone out of position. A center at point guard just has to guard their point guard.
+          Daily gives everyone the same spins and opponent. Unlimited deals new ones every game.
         </p>
         <button type="button" className="btn btn-coral mt-6 w-full" onClick={onClose}>
           Let’s play

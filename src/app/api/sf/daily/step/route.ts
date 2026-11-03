@@ -1,7 +1,7 @@
 import { fail, json, readJson } from "@/lib/server/http";
 import { isAction, replay, RunError } from "@/games/starting-five/engine/run";
 import { playerById } from "@/games/starting-five/server/data";
-import { getSFPuzzle } from "@/games/starting-five/server/puzzle";
+import { puzzleHash, runPuzzle } from "@/games/starting-five/server/finish";
 import { issueRunToken, readRunToken } from "@/games/starting-five/server/run-token";
 import { SLOTS } from "@/games/starting-five/types";
 
@@ -10,8 +10,9 @@ export async function POST(req: Request) {
   const run = readRunToken(body?.token);
   if (!run) return fail("This game session has expired. Reload to pick up today's puzzle.");
   if (!isAction(body?.action)) return fail("Unknown action");
+  const puzzle = runPuzzle(run);
+  if (puzzleHash(puzzle) !== run.ph) return fail("This puzzle was updated. Reload to start it fresh.");
   const actions = [...run.actions, body.action];
-  const puzzle = getSFPuzzle(run.date);
   try {
     const view = replay(puzzle.spins, actions);
     return json({

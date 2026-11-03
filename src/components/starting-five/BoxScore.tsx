@@ -8,7 +8,7 @@ export function BoxScore({ title, lineup, box }: { title: string; lineup: Lineup
     const b = box.players[s];
     return {
       slot: s,
-      name: lineup[s].name,
+      name: `${lineup[s].season} ${lineup[s].name}`,
       cells: [b.pts, b.reb, b.ast, b.stl, b.blk, `${b.fgm}-${b.fga}`, `${b.fg3m}-${b.fg3a}`, `${b.ftm}-${b.fta}`],
     };
   });

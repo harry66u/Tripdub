@@ -20,9 +20,14 @@ export function formatLine(line: SFPlayer["line"]): { label: string; value: stri
   ];
 }
 
-/** Prime seasons as "1987–93" (season end years 1988..1993). */
-export function formatPrime(prime: SFPlayer["prime"]): string {
-  return `${prime.from - 1}–${String(prime.to).slice(2)}`;
+/** A season as "2015–16" (from its end year, 2016). */
+export function formatSeason(season: number): string {
+  return `${season - 1}–${String(season).slice(2)}`;
+}
+
+/** Short label for a version: "2016 Stephen Curry" style uses the end year. */
+export function versionLabel(p: Pick<SFPlayer, "name" | "season">): string {
+  return `${p.season} ${p.name}`;
 }
 
 /** Height in feet and inches, e.g. 6'9" */

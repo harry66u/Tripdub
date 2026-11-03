@@ -7,12 +7,14 @@ export function fixturePlayer(
   n += 1;
   const { r, ...rest } = overrides;
   return {
-    id: `fix${n}`,
+    id: `fix${n}-2014`,
+    pid: `fix${n}`,
     nbaId: null,
     name: `Fixture Player ${n}`,
+    season: 2014,
+    team: { abbr: "TST", name: "Test City Fixtures" },
     pos: "SF",
     heightIn: 79,
-    prime: { from: 2010, to: 2014 },
     tier: "starter",
     ovr: 50,
     era: 2010,
@@ -20,7 +22,8 @@ export function fixturePlayer(
     r: { sco: 50, ply: 50, reb: 50, per: 50, rim: 50, spc: 50, ...r },
     shot: { rim: 0.3, mid: 0.4, three: 0.3 },
     usg: 0.2,
-    acc: { mvp: 0, allStar: 0, allNba: 0, allDef: 0, dpoy: 0, hof: false },
+    acc: { mvp: false, dpoy: false, allStar: false, allNba: null, allDef: null, hof: false },
+    career: { allStar: 0, allNba: 0, mvp: 0 },
     ...rest,
   };
 }
