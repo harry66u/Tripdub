@@ -45,9 +45,10 @@ export default function About() {
       <div className="mt-3 grid gap-3 leading-relaxed">
         <p>
           Seven prompts a day, each with many right answers: three general (“played for the Lakers”) and four specific (“made
-          250+ threes in a season”), easier to harder. Name one player in 25 seconds. Rarer answers score more: Layup 10, Too
-          Cute 15, Midrange 30, Three 60, Logo Shot 85, Half-Court 100. Every 10 points is a foot of range, so a perfect 700 is a
-          70-foot heave.
+          250+ threes in a season”), easier to harder. Type one player before the 25-second shot clock runs out: spelling slips
+          are fixed for you, and an answer that doesn’t count just bounces off, so shoot again. Rarer answers score more: Layup
+          10, Too Cute 15, Midrange 30, Three 60, Logo Shot 85, Half-Court 100. Every 10 points moves your spot a foot farther
+          from the rim, so a perfect 700 is a 70-foot shot from the other team’s free-throw line.
         </p>
         <p>
           Whether an answer counts comes only from Basketball-Reference data (rosters, the draft, awards, season and career

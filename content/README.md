@@ -39,7 +39,7 @@ Everything you'd hand-edit is in `content/deep-cut/`:
 |---|---|
 | `curation.json` | Per prompt: `tooCute` and `halfCourt` picks, `tiers` overrides (`{"Player": "three"}`), `add` / `remove` answers, `disabled: true`, `text` / `note` rewording. |
 | `fame.json` | Casual-fan fame adjustments (+/- points on a 0-100 scale) that move players between tiers everywhere. |
-| `aliases.json` | Other names for autocomplete ("Penny Hardaway", "Ron Artest"). |
+| `aliases.json` | Nicknames and other names the answer box accepts ("Shaq", "Penny Hardaway", "Ron Artest"). |
 | `custom-prompts.json` | Your own prompts: `[{"id": "sixty-points", "text": "Name a player who scored 60+ in a game", "note": "Regular season.", "kind": "specific", "answers": ["Kobe Bryant", "Wilt Chamberlain", "..."]}]`. Answers you list are the valid ones, so check them against a source; tiers are set the same way as every other prompt. |
 
 The quickest way to edit is the command line, which writes `curation.json` and rebuilds:

@@ -9,7 +9,7 @@ custom prompts in content/deep-cut/custom-prompts.json.
 
 Outputs (server-side only):
   src/data/deepcut-prompts.json  [{id, text, kind, answers: {pid: tier}, ease}]
-  src/data/deepcut-names.json    [{i: pid, n: name, y: "1996–2016"}]   (autocomplete list)
+  src/data/deepcut-names.json    [{i: pid, n: name, y: "1996–2016", f: fame, a: aliases}]   (for matching typed answers)
 """
 import collections
 import csv

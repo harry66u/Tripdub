@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { feetFor, pointsFor, zoneFor, RIM_TO_HALF_COURT_FT } from "@/games/deep-cut/engine/scoring";
 import { shareDeepCut, TIER_EMOJI } from "@/games/deep-cut/engine/share";
-import { buildIndex, normName, resolveExact, search } from "@/games/deep-cut/engine/match";
+import { buildIndex, normName, resolveGuess } from "@/games/deep-cut/engine/match";
 import { MAX_SCORE, TIER_POINTS } from "@/games/deep-cut/types";
 
 describe("Deep Cut scoring", () => {
@@ -42,33 +42,59 @@ describe("Deep Cut share", () => {
   });
 });
 
-describe("Deep Cut name matching", () => {
-  const index = buildIndex([
-    { i: "jamesle01", n: "LeBron James", y: "2003–2026" },
-    { i: "jamesbr02", n: "Bronny James", y: "2024–2026" },
-    { i: "hardaan01", n: "Anfernee Hardaway", y: "1993–2008", a: ["Penny Hardaway"] },
-    { i: "doncilu01", n: "Luka Dončić", y: "2018–2026" },
-    { i: "ewingpa01", n: "Patrick Ewing (1985–2002)", y: "1985–2002" },
-    { i: "ewingpa02", n: "Patrick Ewing (2008–2011)", y: "2008–2011" },
-  ]);
-
+describe("Deep Cut name normalizing", () => {
   it("normalizes accents, case and punctuation", () => {
     expect(normName("Luka Dončić")).toBe("luka doncic");
     expect(normName("  Shaquille O'Neal ")).toBe("shaquille oneal");
   });
+});
 
-  it("finds players by any word prefix, most famous first", () => {
-    expect(search(index, "jam").map((e) => e.i)).toEqual(["jamesle01", "jamesbr02"]);
-    expect(search(index, "lebron")[0].i).toBe("jamesle01");
-    expect(search(index, "doncic")[0].i).toBe("doncilu01");
-    expect(search(index, "penny")[0].i).toBe("hardaan01");
-    expect(search(index, "l")).toEqual([]);
+describe("Deep Cut typed guesses", () => {
+  const index = buildIndex([
+    { i: "jamesle01", n: "LeBron James", y: "2003–2026", f: 100, a: ["Bron"] },
+    { i: "jordami01", n: "Michael Jordan", y: "1984–2003", f: 100 },
+    { i: "curryst01", n: "Stephen Curry", y: "2009–2026", f: 98, a: ["Steph Curry", "Steph"] },
+    { i: "antetgi01", n: "Giannis Antetokounmpo", y: "2013–2026", f: 87 },
+    { i: "jordade01", n: "DeAndre Jordan", y: "2008–2025", f: 35 },
+    { i: "curryse01", n: "Seth Curry", y: "2013–2026", f: 12 },
+    { i: "antetth01", n: "Thanasis Antetokounmpo", y: "2015–2026", f: 3 },
+    { i: "jacksja02", n: "Jaren Jackson Jr.", y: "2018–2026", f: 40 },
+    { i: "smithjr01", n: "J.R. Smith", y: "2004–2019", f: 36 },
+    { i: "smithke01", n: "Kenny Smith", y: "1987–1997", f: 33 },
+    { i: "ewingpa01", n: "Patrick Ewing (1985–2002)", y: "1985–2002", f: 72 },
+    { i: "ewingpa02", n: "Patrick Ewing (2008–2011)", y: "2008–2011", f: 2 },
+  ]);
+  const who = (t: string) => {
+    const r = resolveGuess(index, t);
+    return r.status === "found" ? r.entry.i : r.status;
+  };
+
+  it("takes exact names and aliases", () => {
+    expect(who("LeBron James")).toBe("jamesle01");
+    expect(who("steph")).toBe("curryst01");
+    expect(who("Bron")).toBe("jamesle01");
   });
-
-  it("resolves an exact typed name, never an ambiguous one", () => {
-    expect(resolveExact(index, "lebron james")?.i).toBe("jamesle01");
-    expect(resolveExact(index, "Penny Hardaway")?.i).toBe("hardaan01");
-    expect(resolveExact(index, "Patrick Ewing")).toBeNull();
-    expect(resolveExact(index, "Michael Jordan")).toBeNull();
+  it("fixes typos", () => {
+    expect(who("lebron jams")).toBe("jamesle01");
+    expect(who("Giannis Antetokunmpo")).toBe("antetgi01");
+    expect(who("stephen cury")).toBe("curryst01");
+  });
+  it("lets a famous single name stand alone, but not a shared one", () => {
+    expect(who("Curry")).toBe("curryst01");
+    expect(who("Jordan")).toBe("jordami01");
+    expect(who("Giannis")).toBe("antetgi01");
+    expect(who("Smith")).toBe("ambiguous");
+  });
+  it("picks the famous one of two players with the same name", () => {
+    expect(who("Patrick Ewing")).toBe("ewingpa01");
+  });
+  it("drops Jr. and friends", () => {
+    expect(who("Jaren Jackson")).toBe("jacksja02");
+  });
+  it("rejects what is nobody", () => {
+    expect(who("zzzz")).toBe("none");
+    expect(who("Sentry")).toBe("none");
+    expect(who("")).toBe("none");
   });
 });
+

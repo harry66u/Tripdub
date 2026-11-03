@@ -13,7 +13,8 @@ import { addDays, LAUNCH_DATE, puzzleDate, puzzleNumber } from "@/lib/day";
 import { deviceId } from "@/lib/client/device";
 import { markDailyDone } from "@/lib/client/progress";
 import { load, remove, save } from "@/lib/client/storage";
-import { loadNameIndex, NameInput } from "./NameInput";
+import { CourtStage, type Landing } from "./CourtStage";
+import { GuessInput, type GuessInputHandle } from "./GuessInput";
 import { RangeMeter } from "./RangeMeter";
 import { TIER_CHIP, TIER_PANEL } from "./tiers";
 
@@ -27,12 +28,16 @@ const MODES = [
 type Result = { id: string; text: string; answer: string | null; tier: Tier | null; pts: number; count: number; rare: { n: string; tier: Tier }[] };
 type Done = { score: number; feet: number; results: Result[]; percentile: number | null; total: number | null; share: string };
 type Reveal = {
+  status: "scored";
   valid: boolean;
   timedOut: boolean;
+  passed: boolean;
+  outOfTries: boolean;
   tier: Tier | null;
   points: number;
   feet: number;
   name: string | null;
+  corrected: boolean;
   count: number;
   score: number;
   range: number;
@@ -41,9 +46,10 @@ type Reveal = {
   token: string;
   done?: Done;
 };
-type HistoryItem = { prompt: ServedPrompt; said: string | null; passed: boolean; reveal: Omit<Reveal, "token" | "done"> };
+type Rejected = { status: "rejected"; reason: "ambiguous" | "nope"; tries: number; triesLeft: number; leftMs: number; token: string };
+type HistoryItem = { prompt: ServedPrompt; reveal: Omit<Reveal, "token" | "done"> };
 type Saved = {
-  v: 1;
+  v: 2;
   mode: Mode;
   date: string;
   day: string;
@@ -52,16 +58,17 @@ type Saved = {
   index: number;
   total: number;
   limitMs: number;
+  leadMs: number;
   prompt: ServedPrompt | null;
+  /** Client clock when the current prompt appeared; the shot clock starts leadMs later */
   shownAt: number | null;
   reveal: Reveal | null;
   history: HistoryItem[];
-  said?: { text: string | null; passed: boolean };
   done?: Done;
   finished?: boolean;
 };
 
-const keyFor = (m: Mode, day?: string) => (m === "archive" ? `tripdub:deepcut:v1:archive:${day}` : `tripdub:deepcut:v1:${m}`);
+const keyFor = (m: Mode, day?: string) => (m === "archive" ? `tripdub:deepcut:v2:archive:${day}` : `tripdub:deepcut:v2:${m}`);
 
 async function api<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -71,7 +78,7 @@ async function api<T>(path: string, body: unknown): Promise<T> {
 }
 
 function resumable(s: Saved | null): s is Saved {
-  if (!s || s.v !== 1 || !s.token) return false;
+  if (!s || s.v !== 2 || !s.token) return false;
   const today = puzzleDate();
   return s.date === today || (s.date === addDays(today, -1) && !s.done);
 }
@@ -83,22 +90,23 @@ function archiveDays(today = puzzleDate()): string[] {
 }
 
 const longDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+const shortName = (n: string) => n.replace(/\s*\(.*\)$/, "");
 
-function TierChip({ tier, className = "" }: { tier: Tier | null; className?: string }) {
+function TierChip({ tier }: { tier: Tier | null }) {
   return (
-    <span className={`varsity inline-flex items-center rounded-full border-2 border-ink px-2.5 py-0.5 text-xs whitespace-nowrap ${TIER_CHIP[tier ?? "miss"]} ${className}`}>
+    <span className={`varsity inline-flex items-center rounded-full border-2 border-ink px-2.5 py-0.5 text-xs whitespace-nowrap ${TIER_CHIP[tier ?? "miss"]}`}>
       {tier ? TIER_LABEL[tier] : "No good"}
     </span>
   );
 }
 
-function TierLadder({ compact }: { compact?: boolean }) {
+function TierLadder() {
   return (
-    <ol className={`grid gap-1.5 ${compact ? "grid-cols-2" : "sm:grid-cols-2"}`}>
+    <ol className="grid gap-1.5 sm:grid-cols-2">
       {TIERS.map((t) => (
-        <li key={t} className={`flex items-center justify-between gap-2 rounded-xl border-2 border-ink ${compact ? "px-2.5 py-1" : "px-3 py-1.5"} ${TIER_PANEL[t]}`}>
-          <span className={`varsity whitespace-nowrap ${compact ? "text-[11px]" : "text-xs sm:text-sm"}`}>{TIER_LABEL[t]}</span>
-          <span className={`varsity tnum ${compact ? "text-xs" : "text-sm"}`}>{TIER_POINTS[t]}</span>
+        <li key={t} className={`flex items-center justify-between gap-2 rounded-xl border-2 border-ink px-3 py-1.5 ${TIER_PANEL[t]}`}>
+          <span className="varsity text-xs whitespace-nowrap sm:text-sm">{TIER_LABEL[t]}</span>
+          <span className="varsity tnum text-sm">{TIER_POINTS[t]}</span>
         </li>
       ))}
     </ol>
@@ -122,76 +130,55 @@ function Flames() {
   );
 }
 
-function RevealCard({ r, said, passed }: { r: Reveal; said: string | null; passed: boolean }) {
+function revealHeadline(r: Reveal) {
+  if (r.tier) return { head: TIER_LABEL[r.tier], sub: TIER_BLURB[r.tier] };
+  if (r.timedOut) return { head: "Shot clock violation", sub: "Out of time. No points on this one." };
+  if (r.outOfTries) return { head: "Out of shots", sub: "That's the limit on misses for one prompt." };
+  return { head: "Passed", sub: "No points, on to the next one." };
+}
+
+function RevealCard({ r }: { r: Reveal }) {
   const reduce = useReducedMotion();
   const t = r.tier;
   const big = t === "halfcourt" || t === "logo";
-  const headline = t
-    ? TIER_LABEL[t]
-    : r.timedOut
-      ? "Shot clock violation"
-      : passed
-        ? "Passed"
-        : said
-          ? "Airball"
-          : "No shot";
-  const sub = t
-    ? TIER_BLURB[t]
-    : r.timedOut
-      ? "Out of time. No points on this one."
-      : passed
-        ? "No points, on to the next one."
-        : said
-          ? `${r.name ?? `“${said}”`} isn't a valid answer here.`
-          : "No points on this one.";
+  const { head, sub } = revealHeadline(r);
   return (
     <motion.div
       initial={reduce ? false : { scale: 0.85, opacity: 0, y: 10 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: big ? 260 : 420, damping: big ? 14 : 24 }}
-      className={`relative overflow-hidden rounded-[22px] border-[2.5px] border-ink p-5 shadow-[var(--shadow-pop)] ${TIER_PANEL[t ?? "miss"]}`}
+      transition={{ type: "spring", stiffness: big ? 260 : 420, damping: big ? 14 : 24, delay: reduce ? 0 : 0.35 }}
+      className={`relative overflow-hidden rounded-[22px] border-[2.5px] border-ink p-4 shadow-[var(--shadow-pop)] sm:p-5 ${TIER_PANEL[t ?? "miss"]}`}
       aria-live="polite"
     >
       {t === "halfcourt" && !reduce && <Flames />}
-      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-2">
+      <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-1.5">
         <div className="min-w-0">
-          {r.name && t && <p className="truncate text-sm font-bold opacity-80">{r.name}</p>}
-          <p className={`varsity leading-none ${big ? "text-[2rem] sm:text-5xl" : "text-[1.7rem] sm:text-4xl"}`}>{headline}</p>
+          {r.name && t && (
+            <p className="truncate text-sm font-bold opacity-85">
+              {shortName(r.name)}
+              {r.corrected && <span className="ml-1.5 text-xs font-semibold opacity-80">(spelling fixed)</span>}
+            </p>
+          )}
+          <p className={`varsity leading-none ${big ? "text-[2rem] sm:text-5xl" : "text-[1.6rem] sm:text-4xl"}`}>{head}</p>
         </div>
         <div className="text-right">
           <p className="varsity tnum text-[2rem] leading-none sm:text-5xl">+{r.points}</p>
           <p className="mt-1 text-xs font-bold whitespace-nowrap opacity-80 sm:text-sm">+{r.feet} ft of range</p>
         </div>
-        <p className="col-span-2 font-semibold opacity-85">{sub}</p>
+        <p className="col-span-2 text-sm font-semibold opacity-85 sm:text-base">{sub}</p>
       </div>
     </motion.div>
   );
 }
 
-function Timer({ left, limit }: { left: number; limit: number }) {
-  const frac = Math.max(0, Math.min(1, left / limit));
-  const r = 22;
-  const c = 2 * Math.PI * r;
-  const hurry = left < 6000;
+function HudPanel({ label, value, unit, align = "left" }: { label: string; value: string | number; unit?: string; align?: "left" | "right" }) {
   return (
-    <div className={`relative grid h-16 w-16 shrink-0 place-items-center ${hurry ? "dc-hurry" : ""}`} role="timer" aria-label={`${Math.ceil(left / 1000)} seconds left`}>
-      <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full -rotate-90">
-        <circle cx="28" cy="28" r={r} fill="#fff" stroke="var(--color-wash)" strokeWidth="6" />
-        <circle
-          cx="28"
-          cy="28"
-          r={r}
-          fill="none"
-          stroke={hurry ? "var(--color-coral)" : "var(--color-sky-deep)"}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - frac)}
-          style={{ transition: "stroke-dashoffset 100ms linear" }}
-        />
-        <circle cx="28" cy="28" r={r + 3.5} fill="none" stroke="var(--color-ink)" strokeWidth="2.5" />
-      </svg>
-      <span className="varsity tnum relative text-xl">{Math.ceil(left / 1000)}</span>
+    <div className={`rounded-2xl border-[2.5px] border-ink bg-white px-3 py-1.5 shadow-[var(--shadow-pop-sm)] sm:px-4 sm:py-2 ${align === "right" ? "text-right" : ""}`}>
+      <p className="varsity text-[10px] tracking-[0.2em] text-ink-soft sm:text-xs">{label}</p>
+      <p className="varsity tnum text-2xl leading-none sm:text-3xl">
+        {value}
+        {unit && <span className="ml-1 text-sm sm:text-base">{unit}</span>}
+      </p>
     </div>
   );
 }
@@ -206,6 +193,7 @@ export function DeepCutGame() {
   const [now, setNow] = useState(() => Date.now());
   const [shot, setShot] = useState<{ tier: Tier | null; id: number } | null>(null);
   const busyRef = useRef(false);
+  const guessRef = useRef<GuessInputHandle>(null);
 
   const persist = useCallback((next: Saved) => {
     setS(next);
@@ -219,14 +207,14 @@ export function DeepCutGame() {
       setError(null);
       setShot(null);
       try {
-        void loadNameIndex().catch(() => {});
-        const r = await api<{ mode: Mode; date: string; day: string; puzzleNumber: number | null; token: string; index: number; total: number; limitMs: number; prompt: ServedPrompt }>(
+        const r = await api<{ mode: Mode; date: string; day: string; puzzleNumber: number | null; token: string; index: number; total: number; limitMs: number; leadMs: number; prompt: ServedPrompt }>(
           "/api/deep-cut/start",
           { device: deviceId(), mode: m, day },
         );
-        persist({ v: 1, mode: r.mode, date: r.date, day: r.day, puzzleNumber: r.puzzleNumber, token: r.token, index: r.index, total: r.total, limitMs: r.limitMs, prompt: r.prompt, shownAt: Date.now(), reveal: null, history: [] });
+        persist({ v: 2, mode: r.mode, date: r.date, day: r.day, puzzleNumber: r.puzzleNumber, token: r.token, index: r.index, total: r.total, limitMs: r.limitMs, leadMs: r.leadMs, prompt: r.prompt, shownAt: Date.now(), reveal: null, history: [] });
       } catch (e) {
         setError((e as Error).message);
+        setIntro(true);
       }
     },
     [persist],
@@ -236,7 +224,6 @@ export function DeepCutGame() {
     setMode(m);
     setError(null);
     setShot(null);
-    void loadNameIndex().catch(() => {});
     if (m === "archive" && !day) {
       setArchiveDay(null);
       setS(null);
@@ -263,16 +250,20 @@ export function DeepCutGame() {
     else open("daily");
   }, [open]);
 
-  const answer = useCallback(
-    async (pick: { pid: string | null; text: string } | null, passed = false) => {
+  const shoot = useCallback(
+    async (body: { text?: string; pass?: boolean; buzzer?: boolean }) => {
       if (!s?.prompt || s.reveal || busyRef.current) return;
       busyRef.current = true;
       setBusy(true);
       try {
-        const r = await api<Reveal>("/api/deep-cut/answer", { token: s.token, pid: pick?.pid ?? null, text: pick?.pid ? undefined : pick?.text });
+        const r = await api<Reveal | Rejected>("/api/deep-cut/answer", { token: s.token, ...body });
+        if (r.status === "rejected") {
+          persist({ ...s, token: r.token });
+          guessRef.current?.reject(r.reason === "ambiguous" ? "Which one? Add a first name." : "No good. Shoot again.", body.text ?? "");
+          return;
+        }
         const { token, done, ...rest } = r;
-        const said = pick?.text ?? null;
-        persist({ ...s, token, reveal: r, said: { text: said, passed }, history: [...s.history, { prompt: s.prompt, said, passed, reveal: rest }], done });
+        persist({ ...s, token, reveal: r, history: [...s.history, { prompt: s.prompt, reveal: rest }], done });
         setShot({ tier: r.tier, id: Date.now() });
         if (done && s.mode === "daily") markDailyDone("deep", s.date, `${done.score} pts, ${done.feet} ft`, done.share);
       } catch (e) {
@@ -290,9 +281,9 @@ export function DeepCutGame() {
     busyRef.current = true;
     setBusy(true);
     try {
-      const r = await api<{ index: number; total: number; limitMs: number; prompt: ServedPrompt; token: string }>("/api/deep-cut/next", { token: s.token });
-      setShot(null);
-      persist({ ...s, token: r.token, index: r.index, prompt: r.prompt, limitMs: r.limitMs, shownAt: Date.now(), reveal: null, said: undefined });
+      const r = await api<{ index: number; total: number; limitMs: number; leadMs: number; prompt: ServedPrompt; token: string }>("/api/deep-cut/next", { token: s.token });
+      guessRef.current?.clear();
+      persist({ ...s, token: r.token, index: r.index, prompt: r.prompt, limitMs: r.limitMs, leadMs: r.leadMs, shownAt: Date.now(), reveal: null });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -301,22 +292,34 @@ export function DeepCutGame() {
     }
   };
 
-  // Shot clock; at zero the prompt is submitted with no answer.
-  const live = !!s?.prompt && !s.reveal && !s.done;
+  // Read-in, then the shot clock; at zero the prompt ends with no points.
+  const active = !!s?.prompt && !s.reveal && !s.done;
   useEffect(() => {
-    if (!live) return;
+    if (!active) return;
     const t = setInterval(() => setNow(Date.now()), 100);
     return () => clearInterval(t);
-  }, [live]);
-  const left = live && s?.shownAt ? Math.max(0, s.limitMs - (now - s.shownAt)) : 0;
+  }, [active]);
+  const clockStart = (s?.shownAt ?? 0) + (s?.leadMs ?? 0);
+  const leadLeft = active ? Math.max(0, clockStart - now) : 0;
+  const live = active && leadLeft <= 0;
+  const left = active ? Math.max(0, s!.limitMs - Math.max(0, now - clockStart)) : 0;
   useEffect(() => {
-    if (live && left <= 0 && !busyRef.current) void answer(null);
-  }, [live, left, answer]);
+    if (live && left <= 0 && !busyRef.current) void shoot({ buzzer: true });
+  }, [live, left, shoot]);
 
   const score = s?.reveal?.score ?? s?.history.at(-1)?.reveal.score ?? 0;
   const feet = Math.round(score) / 10;
+  const landings: Landing[] = [];
+  {
+    let acc = 0;
+    for (const h of s?.history ?? []) {
+      acc += h.reveal.points;
+      // Only made shots move you; a pass or a miss stays where you were
+      if (h.reveal.tier && h.reveal.name) landings.push({ feet: acc / 10, label: shortName(h.reveal.name), tier: h.reveal.tier });
+    }
+  }
 
-  const header = (
+  const heading = (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
@@ -337,8 +340,12 @@ export function DeepCutGame() {
       <ModeTabs<Mode> mode={mode} modes={MODES} onChange={(m) => open(m)} />
     </div>
   );
-
-  const shell = (children: React.ReactNode) => <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 sm:px-6 sm:pt-8">{header}{children}</div>;
+  const shell = (children: React.ReactNode) => (
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-6 sm:px-6 sm:pt-8">
+      {heading}
+      {children}
+    </div>
+  );
 
   // ----- Archive picker -----
   if (mode === "archive" && !archiveDay) {
@@ -376,26 +383,26 @@ export function DeepCutGame() {
   }
 
   // ----- Intro -----
-  if (intro && !s) {
+  if ((intro && !s) || (!s && error)) {
     return shell(
       <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <div className="pop rounded-[var(--radius-card)] bg-white p-6 sm:p-8">
           <p className="text-sm font-bold text-coral-deep">{mode === "daily" ? "Today’s seven prompts" : mode === "archive" ? "A past day’s seven prompts" : "Seven random prompts"}</p>
-          <h2 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">Rarer answers score more.</h2>
+          <h2 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">Rarer answers shoot deeper.</h2>
           <p className="mt-3 max-w-xl text-lg text-ink-soft">
-            Each prompt has many right answers. Name one player in 25 seconds. The answer everyone says is a layup. The one nobody thinks of is a shot from way downtown.
+            Each prompt has many right answers. Type one player before the 25-second shot clock runs out. Wrong answers bounce off, so shoot again. The answer everyone says is a layup; the one nobody thinks of is a shot from way downtown.
           </p>
           <div className="mt-5">
             <TierLadder />
           </div>
-          <p className="mt-4 text-sm font-semibold text-ink-soft">Every 10 points is a foot of range. A perfect day is 700 points: a 70-foot heave.</p>
+          <p className="mt-4 text-sm font-semibold text-ink-soft">Every 10 points moves you a foot farther from the rim. A perfect day is 700: their free-throw line.</p>
           {error && <p className="mt-4 font-semibold text-coral-deep">{error}</p>}
           <button type="button" className="btn btn-coral mt-5 px-6 text-lg" onClick={() => void begin(mode, archiveDay ?? undefined)}>
             {mode === "daily" ? `Start Deep Cut #${puzzleNumber(puzzleDate())}` : mode === "archive" ? `Start #${puzzleNumber(archiveDay!)}` : "Start"}
           </button>
         </div>
-        <div className="pop hidden overflow-hidden rounded-[var(--radius-card)] bg-sky p-3 lg:block">
-          <RangeMeter feet={0} className="mx-auto block h-auto w-full max-w-[300px] rounded-[20px]" />
+        <div className="pop relative hidden h-[480px] overflow-hidden rounded-[var(--radius-card)] lg:block">
+          <CourtStage feet={0} landings={[]} anchor={0.5} />
         </div>
       </section>,
     );
@@ -404,16 +411,7 @@ export function DeepCutGame() {
   if (!s) {
     return shell(
       <div className="grid min-h-[40vh] place-items-center text-center">
-        {error ? (
-          <div className="grid gap-4">
-            <p className="text-lg font-semibold">{error}</p>
-            <button className="btn btn-coral mx-auto" onClick={() => void begin(mode, archiveDay ?? undefined)}>
-              Try again
-            </button>
-          </div>
-        ) : (
-          <p className="animate-pulse text-lg font-semibold text-ink-soft">Walking out to the court…</p>
-        )}
+        <p className="animate-pulse text-lg font-semibold text-ink-soft">Walking out to the court…</p>
       </div>,
     );
   }
@@ -455,7 +453,7 @@ export function DeepCutGame() {
               <p className="mt-0.5 font-extrabold">{r.text}</p>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                 <TierChip tier={r.tier} />
-                <span className="font-semibold">{r.answer ?? (s.history[i]?.said ? `“${s.history[i].said}”` : "No answer")}</span>
+                <span className="font-semibold">{r.answer ? shortName(r.answer) : s.history[i]?.reveal.timedOut ? "Out of time" : "No answer"}</span>
               </p>
               {r.rare.length > 0 && (
                 <p className="mt-2 text-sm text-ink-soft">
@@ -463,7 +461,7 @@ export function DeepCutGame() {
                   {r.rare.map((x, k) => (
                     <span key={x.n}>
                       {k > 0 && ", "}
-                      {x.n.replace(/\s*\(.*\)$/, "")} <span className="text-xs font-bold">({TIER_LABEL[x.tier]})</span>
+                      {shortName(x.n)} <span className="text-xs font-bold">({TIER_LABEL[x.tier]})</span>
                     </span>
                   ))}
                 </p>
@@ -500,108 +498,96 @@ export function DeepCutGame() {
     );
   }
 
-  // ----- Playing -----
+  // ----- Playing: on the court -----
   const p = s.prompt!;
   const r = s.reveal;
-  return shell(
-    <>
-      {error && (
-        <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-2xl border-[2.5px] border-ink bg-coral-soft px-4 py-3">
-          <span className="font-semibold">{error}</span>
-          {/expired/i.test(error) && (
-            <button className="btn btn-white px-3 py-1 text-sm" onClick={() => { remove(keyFor(s.mode, s.day)); void begin(s.mode, s.mode === "archive" ? s.day : undefined); }}>
-              Reload
-            </button>
-          )}
-        </div>
-      )}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:items-start">
-        <div className="grid min-w-0 gap-4">
-          <div className="flex items-center justify-between gap-3 text-sm font-semibold">
-            <span className="flex items-center gap-1.5" aria-label={`Prompt ${s.index + 1} of ${s.total}`}>
+  const seconds = Math.ceil((live ? left : s.limitMs) / 1000);
+  return (
+    <div className="relative h-[calc(100svh-4rem)] min-h-[560px] w-full">
+      <CourtStage feet={feet} shot={shot} landings={landings} anchor={0.8}>
+        {/* HUD */}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3 sm:p-4">
+          <HudPanel label="RANGE" value={feet} unit="FT" />
+          <div className="flex flex-col items-center gap-1 pt-1">
+            <div className="flex gap-1" aria-label={`Prompt ${s.index + 1} of ${s.total}`}>
               {Array.from({ length: s.total }, (_, i) => {
                 const h = s.history[i];
                 return (
                   <span
                     key={i}
-                    className={`h-3.5 w-3.5 rounded-full border-2 border-ink ${h ? TIER_CHIP[h.reveal.tier ?? "miss"].split(" ")[0] : i === s.index ? "bg-butter" : "bg-white"}`}
+                    className={`h-4 w-4 rounded-[5px] border-2 border-ink sm:h-5 sm:w-5 ${h ? TIER_CHIP[h.reveal.tier ?? "miss"].split(" ")[0] : i === s.index ? "bg-butter" : "bg-white/40"}`}
                   />
                 );
               })}
-              <span className="ml-2">
-                Prompt <span className="varsity">{s.index + 1}</span> of {s.total}
-              </span>
-            </span>
-            <span className="tnum text-right">
-              <span className="varsity text-base">{score}</span> pts · <span className="varsity text-base">{feet}</span> ft
-            </span>
-          </div>
-
-          <motion.section
-            key={p.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="pop rounded-[var(--radius-card)] bg-white p-5 sm:p-7"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="flex flex-wrap gap-2 text-xs font-bold">
-                  <span className="rounded-full bg-sky px-2.5 py-1">{p.kind === "general" ? "General" : "Specific"}</span>
-                  <span className="rounded-full bg-wash px-2.5 py-1">{p.count.toLocaleString()} valid answers</span>
-                </p>
-                <h2 className="mt-3 text-[1.75rem] leading-[1.12] font-extrabold tracking-tight text-balance sm:text-[2.4rem]">{p.text}</h2>
-                {p.note && <p className="mt-2 text-sm font-medium text-ink-soft">{p.note}</p>}
-              </div>
-              {!r && <Timer left={left} limit={s.limitMs} />}
             </div>
-            <div className="mt-6">
-              <AnimatePresence mode="wait" initial={false}>
-                {r ? (
-                  <motion.div key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4">
-                    <RevealCard r={r} said={s.said?.text ?? null} passed={!!s.said?.passed} />
-                    <button
-                      type="button"
-                      className="btn btn-coral justify-self-start px-6"
-                      disabled={busy}
-                      autoFocus
-                      onClick={() => (r.index + 1 >= r.total ? persist({ ...s, finished: true }) : void nextPrompt())}
-                    >
-                      {r.index + 1 >= r.total ? "See your results" : "Next prompt"}
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div key="input" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <NameInput key={p.id} disabled={busy} onShoot={(pick) => void answer(pick)} onPass={() => void answer(null, true)} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.section>
-          <div className="lg:hidden">
-            <div className="pop overflow-hidden rounded-[var(--radius-card)] bg-sky p-1.5">
-              <RangeMeter feet={feet} orientation="horizontal" shot={shot} className="h-auto w-full" label={false} />
-            </div>
-          </div>
-        </div>
-        <aside className="hidden lg:sticky lg:top-24 lg:block">
-          <div className="pop rounded-[var(--radius-card)] bg-white p-4">
-            <div className="flex items-baseline justify-between">
-              <p className="text-sm font-bold">Your range</p>
-              <p className="text-sm font-semibold text-ink-soft">{zoneFor(feet).label}</p>
-            </div>
-            <p className="varsity tnum text-4xl leading-tight">
-              {feet}
-              <span className="ml-1 text-xl">ft</span>
+            <p className="varsity text-[10px] tracking-[0.2em] text-white sm:text-xs">
+              PROMPT {s.index + 1} OF {s.total}
             </p>
-            <div className="mx-auto mt-2 w-full max-w-[270px] overflow-hidden rounded-[20px] border-[2.5px] border-ink">
-              <RangeMeter feet={feet} shot={shot} className="block h-auto w-full" />
-            </div>
-            <div className="mt-3">
-              <TierLadder compact />
-            </div>
           </div>
-        </aside>
-      </div>
-    </>,
+          <HudPanel label="SCORE" value={score} align="right" />
+        </div>
+
+        {/* the prompt and your shot */}
+        <div className="absolute inset-x-0 top-[5.25rem] z-10 mx-auto grid w-[min(760px,calc(100%-1.5rem))] grid-cols-[minmax(0,1fr)] gap-3 sm:top-24">
+          {error && (
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border-[2.5px] border-ink bg-coral-soft px-4 py-2.5">
+              <span className="text-sm font-semibold">{error}</span>
+              {/expired/i.test(error) && (
+                <button className="btn btn-white px-3 py-1 text-sm" onClick={() => { remove(keyFor(s.mode, s.day)); void begin(s.mode, s.mode === "archive" ? s.day : undefined); }}>
+                  Reload
+                </button>
+              )}
+            </div>
+          )}
+          <motion.section key={p.id} initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="pop rounded-[var(--radius-card)] bg-white p-4 sm:p-6">
+            <p className="varsity flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tracking-[0.15em] text-coral-deep sm:text-xs">
+              <span>PROMPT {s.index + 1} OF {s.total}</span>
+              <span className="text-ink-soft">{p.kind === "general" ? "GENERAL" : "SPECIFIC"}</span>
+              <span className="text-ink-soft">{p.count.toLocaleString()} VALID ANSWERS</span>
+            </p>
+            <h2 className={`mt-2 leading-[1.1] font-extrabold tracking-tight text-balance ${r ? "text-xl sm:text-2xl" : "text-[1.6rem] sm:text-[2.3rem]"}`}>{p.text}</h2>
+            {p.note && !r && <p className="mt-1.5 text-sm font-medium text-ink-soft">{p.note}</p>}
+            {!r && <p className="mt-2 text-xs font-bold text-ink-soft">▼ The rarer the answer, the deeper the shot ▼</p>}
+          </motion.section>
+
+          <AnimatePresence mode="wait" initial={false}>
+            {r ? (
+              <motion.div key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-[minmax(0,1fr)] gap-3">
+                <RevealCard r={r} />
+                <button
+                  type="button"
+                  className="btn btn-coral justify-self-start px-6"
+                  disabled={busy}
+                  autoFocus
+                  onClick={() => (r.index + 1 >= r.total ? persist({ ...s, finished: true }) : void nextPrompt())}
+                >
+                  {r.index + 1 >= r.total ? "See your results" : "Next prompt"}
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div key="shoot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-[22px] bg-ink/55 p-2.5 backdrop-blur-sm sm:p-3">
+                <GuessInput ref={guessRef} disabled={busy} live={live} seconds={seconds} onShoot={(text) => void shoot({ text })} onPass={() => void shoot({ pass: true })} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* read-in before the shot clock */}
+        <AnimatePresence>
+          {active && leadLeft > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-x-0 bottom-6 z-10 mx-auto w-fit rounded-full border-[2.5px] border-ink bg-white px-5 py-2 shadow-[var(--shadow-pop-sm)]"
+            >
+              <span className="varsity text-sm tracking-[0.12em]">
+                Bringing it up the floor · shot clock in <span className="text-coral-deep">{Math.ceil(leadLeft / 1000)}</span>
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CourtStage>
+    </div>
   );
 }

@@ -21,13 +21,19 @@ export type DCToken = {
   device: string;
   rid: string;
   i: number;
-  /** When the current prompt was served (ms epoch); null between prompts */
+  /** When the current prompt's shot clock starts (ms epoch, after the read-in); null between prompts */
   at: number | null;
+  /** Rejected guesses so far on the current prompt */
+  tries: number;
   res: DCAnswer[];
 };
 
 export const LATENCY_ALLOWANCE_MS = 300;
 export const LATE_GRACE_MS = 1500;
+/** Time to read the prompt before the shot clock starts. */
+export const LEAD_MS = 3000;
+/** Rejected guesses allowed per prompt (a person manages a handful in 25 seconds; a script would not stop). */
+export const MAX_TRIES = 12;
 
 export function issueDeepCutToken(t: DCToken): string {
   return signToken(t, runSecret());
@@ -38,6 +44,7 @@ export function readDeepCutToken(token: unknown): DCToken | null {
   const t = verifyToken<DCToken>(token, runSecret());
   if (!t || t.v !== 1 || !["daily", "unlimited", "archive"].includes(t.mode) || !isValidDate(t.date) || !isValidDate(t.day)) return null;
   if (typeof t.salt !== "string" || typeof t.rid !== "string" || !Number.isInteger(t.i) || t.i < 0 || t.i >= PROMPTS_PER_DAY || !Array.isArray(t.res)) return null;
+  if (!Number.isInteger(t.tries) || t.tries < 0 || t.tries > MAX_TRIES) return null;
   const today = puzzleDate();
   if (t.date !== today && t.date !== addDays(today, -1)) return null;
   return t;
