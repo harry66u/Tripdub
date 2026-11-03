@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  /* Sampled from the Tripdub icon set */
+  --color-wash: #eff5fa;
+  --color-sky: #9bc7ee;
+  --color-ink: #1b3963;
+  --color-coral: #ed7868;
+  /* Supporting tones */
+  --color-sky-soft: #d6e8f8;
+  --color-sky-deep: #6fa8dc;
+  --color-ink-soft: #546d93;
+  --color-coral-deep: #d65e4d;
+  --color-coral-soft: #fbdcd6;
+  --color-butter: #ffcf5c;
+  --color-butter-soft: #fff1c9;
+  --color-mint: #5bc9a0;
+  --color-mint-soft: #d5f2e7;
+
+  --font-display: "Graduate", ui-serif, Georgia, serif;
+  --font-sans: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 26px;
+  --radius-chip: 14px;
+  --shadow-pop: 4px 5px 0 0 var(--color-ink);
+  --shadow-pop-sm: 2px 3px 0 0 var(--color-ink);
+  --shadow-pop-lg: 6px 8px 0 0 var(--color-ink);
+
+  --animate-pop-in: pop-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.86) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+:root {
+  color-scheme: light;
+  --ink-line: 2.5px;
+}
+
+html {
+  background: var(--color-wash);
+  color: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-wash);
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-butter);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-coral);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+@layer components {
+  /* A surface drawn like the icons: navy outline, hard offset shadow. */
+  .pop {
+    border: var(--ink-line) solid var(--color-ink);
+    box-shadow: var(--shadow-pop);
+  }
+  .pop-sm {
+    border: 2px solid var(--color-ink);
+    box-shadow: var(--shadow-pop-sm);
+  }
+
+  /* Pressable button: sinks into its shadow on press. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: var(--ink-line) solid var(--color-ink);
+    border-radius: 999px;
+    box-shadow: var(--shadow-pop);
+    font-weight: 700;
+    font-variation-settings: "wdth" 100;
+    letter-spacing: 0.01em;
+    padding: 0.7rem 1.4rem;
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease,
+      background-color 160ms ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 6px 0 0 var(--color-ink);
+  }
+  .btn:active,
+  .btn[data-pressed="true"] {
+    transform: translate(3px, 4px);
+    box-shadow: 1px 1px 0 0 var(--color-ink);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+    box-shadow: var(--shadow-pop-sm);
+  }
+  .btn-coral {
+    background: var(--color-coral);
+    color: #fff;
+  }
+  .btn-white {
+    background: #fff;
+    color: var(--color-ink);
+  }
+  .btn-sky {
+    background: var(--color-sky);
+    color: var(--color-ink);
+  }
+
+  .varsity {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+
+  /* Tabular scoreboard numerals */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
