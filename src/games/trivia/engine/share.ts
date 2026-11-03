@@ -15,7 +15,7 @@ export function shareTrivia(r: {
 }): string {
   const right = r.results.filter((x) => x.correct).length;
   const lines = [
-    r.puzzleNumber == null ? "TRIPDUB · Daily Trivia · Unlimited" : `TRIPDUB · Daily Trivia #${r.puzzleNumber}`,
+    r.puzzleNumber == null ? "TRIPDUB · NBA Trivia · Unlimited" : `TRIPDUB · NBA Trivia #${r.puzzleNumber}`,
     r.results.map(answerEmoji).join(""),
     `${right}/${r.results.length} right · ${r.score.toLocaleString("en-US")} pts`,
   ];

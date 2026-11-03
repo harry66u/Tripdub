@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("trivia: answer seven questions, see reveals and the results, survive a reload", async ({ page }) => {
   await page.goto("/trivia?mode=unlimited");
-  await expect(page.getByRole("heading", { name: "Daily Trivia" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "NBA Trivia" })).toBeVisible();
   for (let i = 0; i < 7; i++) {
     await expect(page.getByText(`of 7`).first()).toBeVisible();
     const options = page.locator("section button").filter({ hasText: /^[ABCD]/ });

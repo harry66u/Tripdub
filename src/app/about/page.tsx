@@ -34,6 +34,13 @@ export default function About() {
         </p>
       </div>
 
+      <h2 className="mt-10 text-2xl font-extrabold">NBA Trivia</h2>
+      <p className="mt-3 leading-relaxed">
+        Every question is generated from Basketball-Reference data, so the answers come straight from the record books: award
+        winners, stat leaders, teams, colleges and standings. The wrong options are real contenders, like that year’s other MVP
+        finalists. You get 100 points for a right answer and up to 200 more for answering fast.
+      </p>
+
       <h2 className="mt-10 text-2xl font-extrabold">Data sources</h2>
       <ul className="mt-3 grid list-disc gap-2 pl-5 leading-relaxed">
         <li>

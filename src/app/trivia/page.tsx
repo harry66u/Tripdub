@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { TriviaGame } from "@/components/trivia/TriviaGame";
 
 export const metadata: Metadata = {
-  title: "Daily Trivia",
-  description: "Seven general-knowledge questions a day. Faster right answers score more.",
+  title: "NBA Trivia",
+  description: "Seven NBA questions a day, built from real stats. The faster you answer, the more you score.",
 };
 
 export default function TriviaPage() {

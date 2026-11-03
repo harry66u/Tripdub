@@ -6,14 +6,14 @@ import { shareTrivia } from "@/games/trivia/engine/share";
 const q = { id: "q1", q: "Capital of France?", a: ["Paris", "Rome", "Madrid", "Berlin"], cat: "Geography", diff: "easy" as const };
 
 describe("pointsFor", () => {
-  it("gives 100 plus a speed bonus that falls to zero at the buzzer", () => {
-    expect(pointsFor({ correct: true, ms: 0, pct: null })).toEqual({ base: 100, speed: 100, rarity: 0, total: 200 });
-    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS / 2, pct: null }).speed).toBe(50);
+  it("rewards speed most: 100 for being right plus up to 200 for answering fast", () => {
+    expect(pointsFor({ correct: true, ms: 0, pct: null })).toEqual({ base: 100, speed: 200, rarity: 0, total: 300 });
+    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS / 2, pct: null }).speed).toBe(100);
     expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS, pct: null }).speed).toBe(0);
   });
   it("adds a rarity bonus when most players missed it", () => {
-    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS, pct: 0.2 }).rarity).toBe(60);
-    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS, pct: 0.9 }).rarity).toBe(8);
+    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS, pct: 0.2 }).rarity).toBe(40);
+    expect(pointsFor({ correct: true, ms: TIME_LIMIT_MS, pct: 0.9 }).rarity).toBe(5);
   });
   it("gives nothing for a miss or a timeout", () => {
     expect(pointsFor({ correct: false, ms: 1000, pct: 0.1 }).total).toBe(0);
@@ -40,7 +40,7 @@ describe("shareTrivia", () => {
       { correct: true, ms: 2000 }, { correct: true, ms: 9000 }, { correct: false, ms: 4000 },
       { correct: true, ms: 1000 }, { correct: false, ms: 15000 }, { correct: true, ms: 3000 }, { correct: true, ms: 12000 },
     ], score: 1012, percentile: null });
-    expect(t.startsWith("TRIPDUB · Daily Trivia #3")).toBe(true);
+    expect(t.startsWith("TRIPDUB · NBA Trivia #3")).toBe(true);
     expect(t).toContain("⚡🟩🟥⚡🟥⚡🟩");
     expect(t).toContain("1,012");
     expect(t).not.toContain("Paris");

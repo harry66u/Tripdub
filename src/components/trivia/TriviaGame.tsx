@@ -186,7 +186,7 @@ export function TriviaGame() {
   }, [live, busy, answer]);
 
   const header = (
-    <GameHeader title="Daily Trivia" mode={mode} puzzleNumber={s?.puzzleNumber ?? null} date={s?.date ?? null} onMode={(m) => open(m)} />
+    <GameHeader title="NBA Trivia" mode={mode} puzzleNumber={s?.puzzleNumber ?? null} date={s?.date ?? null} onMode={(m) => open(m)} />
   );
 
   if (!s) {

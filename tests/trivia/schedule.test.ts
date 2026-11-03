@@ -11,6 +11,14 @@ describe("generateTriviaDay", () => {
     expect(d.questions.map((id) => diffOf.get(id))).toEqual(["easy", "easy", "medium", "medium", "medium", "hard", "hard"]);
     expect(new Set(d.questions).size).toBe(7);
   });
+  it("mixes categories: none more than twice in a day", () => {
+    for (let i = 0; i < 40; i++) {
+      const d = generateTriviaDay(`2027-01-${String((i % 28) + 1).padStart(2, "0")}`, BANK, new Map(), String(i));
+      const cats = d.questions.map((id) => BANK.find((q) => q.id === id)!.cat);
+      for (const c of new Set(cats)) expect(cats.filter((x) => x === c).length).toBeLessThanOrEqual(2);
+    }
+  });
+
   it("is deterministic per date and differs per salt", () => {
     expect(generateTriviaDay("2026-11-03", BANK, new Map())).toEqual(generateTriviaDay("2026-11-03", BANK, new Map()));
     expect(generateTriviaDay("2026-11-03", BANK, new Map(), "a").questions).not.toEqual(

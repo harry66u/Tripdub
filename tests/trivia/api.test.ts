@@ -64,9 +64,9 @@ describe("trivia API", () => {
     expect(a.body.correct).toBe(true);
     expect(a.body.correctIndex).toBe(rightChoice(s.body.question.id));
     expect(a.body.points.base).toBe(100);
-    expect(a.body.points.speed).toBeGreaterThan(90);
-    // 10 of 40 got it before: rarity bonus 75 * 0.75
-    expect(a.body.points.rarity).toBe(56);
+    expect(a.body.points.speed).toBeGreaterThan(180);
+    // 10 of 40 got it before: rarity bonus 50 * 0.75
+    expect(a.body.points.rarity).toBe(38);
     expect(a.body.pctCorrect).toBeCloseTo(11 / 41, 5);
   });
 
@@ -116,8 +116,8 @@ describe("trivia API", () => {
       token = n.body.token;
       qid = n.body.question.id;
     }
-    expect(done!.body.done!.score).toBeGreaterThan(700);
-    expect(done!.body.done!.share).toContain("TRIPDUB · Daily Trivia #");
+    expect(done!.body.done!.score).toBeGreaterThan(1500);
+    expect(done!.body.done!.share).toContain("TRIPDUB · NBA Trivia #");
     expect(done!.body.done!.percentile).toBe(0.6);
     expect(recordDailyResult).toHaveBeenCalledTimes(1);
     expect(vi.mocked(recordDailyResult).mock.calls[0][0]).toMatchObject({ game: "trivia", device: DEVICE });

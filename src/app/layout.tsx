@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export const metadata: Metadata = {
   title: { default: "Tripdub · Daily hoops", template: "%s · Tripdub" },
-  description: "Three daily games for hoops heads: Starting Five, Daily Trivia, and Shot Chart. Play solo or go 1v1.",
+  description: "Three daily games for hoops heads: Starting Five, NBA Trivia, and Shot Chart. Play solo or go 1v1.",
 };
 
 export const viewport: Viewport = {
