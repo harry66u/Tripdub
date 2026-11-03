@@ -50,7 +50,7 @@ Rules:
 | Every regular-season shot with location and zone | NBA.com stats, via the open `DomSamangy/NBA_Shots_04_25` mirror | 2003-04 to 2024-25 | Shot Chart zones |
 | Trivia questions | Open Trivia Database (CC BY-SA 4.0), filtered to general-knowledge categories and cleaned | ~2,500 usable multiple-choice questions after filtering | Daily Trivia and Trivia 1v1 |
 
-A footer and an About page credit Basketball-Reference, NBA.com, and OpenTDB (attribution is required by CC BY-SA). There are no logos, team marks, or player photos anywhere. Players are shown with names, stats, and original graphics only.
+A footer and an About page credit Basketball-Reference, NBA.com, and OpenTDB (attribution is required by CC BY-SA). There are no logos or team marks anywhere. **Player headshots:** official NBA.com headshots, loaded directly from cdn.nba.com by NBA.com person id (your decision, 2026-11-03; the NBA owns these images, so a takedown request is possible). If a headshot is missing, the player's varsity initials show instead. Photos appear only after a player is revealed (a card after the spin, results, Shot Chart reveals), never before a guess.
 
 The trivia bank covers about a year of dailies, so I'll extend it with more cleaned or hand-written questions before it runs out. The schedule checker warns 60 days ahead of that point.
 
@@ -150,7 +150,10 @@ Trivia shows an emoji row per question (⚡ fast correct, 🟩 correct, 🟥 mis
 - Editing: change the JSON directly, or use `npm run puzzle -- show|set|reroll <game> <date>`. `npm run schedule:check` validates ids and runs in CI. An admin-only `/admin` page (gated by your email) previews upcoming puzzles.
 
 ## 12. Design direction
-- Its own brand: a late-night broadcast and arena-scoreboard feel, not a pastel grid. Deep ink-navy base, hardwood amber and signal orange accents, a triple-stripe motif (three games, a triple-double), and condensed athletic display type with tabular scoreboard numerals. Fonts are self-hosted via Fontsource.
+- Built from the Tripdub icon set (coral ball with navy outline on sky blue; variants: retro drop shadow, three stars, varsity 3). Light theme, colors sampled from the icons: wash `#EFF5FA`, sky `#9BC7EE`, navy ink `#1B3963`, coral `#ED7868`, white. Small supporting tones: butter `#FFCF5C` (legend tier, stars) and mint `#5BC9A0` (correct answers).
+- Illustrated, retro-athletic style: consistent navy outlines, **hard offset drop shadows** (no blur) on interactive surfaces, generous rounded corners like the app-icon squircle, and flat fills. Buttons press "into" their shadow.
+- Type: **Graduate** (collegiate varsity) for the wordmark, slot letters, and scoreboard numerals. **Bricolage Grotesque** (variable) for headings and UI. Self-hosted via Fontsource.
+- Brand marks: the three-stars ball is the header logo (three games), the drop-shadow ball is the favicon/app icon, and the varsity 3 appears in the Tripdub celebration and the combined share.
 - Motion: the wheel uses physics-style easing with tick feedback and a slowdown near its stop. Card flip reveals, slot snap with a spring, and score count-ups. `prefers-reduced-motion` is respected.
 - Performance: server components for shells, game code split per route, no large client bundles, and fonts subset.
 

@@ -1,0 +1,39 @@
+{
+  "name": "tripdub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "next build && playwright test",
+    "data": "python3 -I scripts/data/fetch.py --shots && python3 -I scripts/data/build_players.py && python3 -I scripts/data/build_shotcharts.py && python3 -I scripts/data/build_trivia.py",
+    "schedule": "tsx scripts/schedule/generate.ts",
+    "schedule:check": "tsx scripts/schedule/check.ts",
+    "puzzle": "tsx scripts/schedule/puzzle.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource/graduate": "^5.3.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "motion": "^14.9.0",
+    "next": "^16.4.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.4",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.4",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
