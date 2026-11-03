@@ -36,7 +36,7 @@ export interface DCPrompt {
   answers: Record<string, Tier>;
 }
 
-/** Autocomplete entry: id, label, career years, aliases */
+/** A player the typed-answer matcher knows: id, label, career years, fame, aliases */
 export interface DCName {
   i: string;
   n: string;

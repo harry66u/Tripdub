@@ -1,24 +1,34 @@
 import { expect, test } from "@playwright/test";
 
-test("deep cut: name players with autocomplete, see tier reveals and the results, survive a reload", async ({ page }) => {
+test("deep cut: type answers on the court, wrong ones bounce, see reveals and the results, survive a reload", async ({ page }) => {
   await page.goto("/deep-cut?mode=unlimited");
   await expect(page.getByRole("heading", { name: "Deep Cut" })).toBeVisible();
   await page.getByRole("button", { name: "Start" }).click();
-  const names = ["LeBron", "Kareem", "Tim Duncan", "Kobe", "Stephen Curry", "Shaq", "Dirk"];
+  const input = page.getByRole("textbox", { name: "Name a player" });
+  const reveal = page.getByText(/^\+[\d.]+ ft of range$/);
   for (let i = 0; i < 7; i++) {
-    await expect(page.getByText(`Prompt ${i + 1} of 7`).first()).toBeAttached();
-    const input = page.getByRole("combobox", { name: "Name a player" });
-    if (i === 4) {
-      await page.getByRole("button", { name: "Pass on this one" }).click();
-    } else {
-      await input.fill(names[i]);
-      await expect(page.getByRole("option").first()).toBeVisible();
-      await page.keyboard.press("Enter");
-    }
-    await expect(page.getByText(/^\+[\d.]+ ft of range$/)).toBeVisible();
+    await expect(page.getByText(`PROMPT ${i + 1} OF 7`).first()).toBeVisible();
+    await expect(input).toBeEnabled({ timeout: 6000 }); // after the read-in
+    // Not a player: it bounces and the prompt stays open
+    await input.fill("Zzzz Nobody");
+    await input.press("Enter");
+    await expect(page.getByText("No good. Shoot again.")).toBeVisible();
+    await expect(input).toBeEnabled();
+    // A star might count; otherwise pass
+    await input.fill("LeBron James");
+    await input.press("Enter");
+    const outcome = await Promise.race([
+      reveal.waitFor().then(() => "scored"),
+      page.getByText("Zzzz Nobody").first().waitFor().then(async () => {
+        await page.waitForTimeout(400);
+        return (await reveal.isVisible()) ? "scored" : "pass";
+      }),
+    ]);
+    if (outcome === "pass" && !(await reveal.isVisible())) await page.getByRole("button", { name: "Pass" }).click();
+    await expect(reveal).toBeVisible();
     if (i === 2) {
       await page.reload();
-      await expect(page.getByText(/^\+[\d.]+ ft of range$/)).toBeVisible();
+      await expect(reveal).toBeVisible();
     }
     await page.getByRole("button", { name: i === 6 ? "See your results" : "Next prompt" }).click();
   }

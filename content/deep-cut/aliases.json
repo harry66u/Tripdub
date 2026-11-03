@@ -1,5 +1,5 @@
 {
-  "_about": "Other names players are known by, so autocomplete finds them. Keys are Basketball-Reference ids.",
+  "_about": "Nicknames and other names players are known by, so typed answers like \"Shaq\" or \"Penny Hardaway\" count. Keys are Basketball-Reference ids.",
   "hardaan01": [
     "Penny Hardaway"
   ],
@@ -21,9 +21,180 @@
     "Enes Kanter"
   ],
   "olajuha01": [
+    "The Dream",
     "Akeem Olajuwon"
   ],
   "abdulma02": [
     "Chris Jackson"
+  ],
+  "onealsh01": [
+    "Shaq"
+  ],
+  "curryst01": [
+    "Steph",
+    "Chef Curry",
+    "Steph Curry"
+  ],
+  "duranke01": [
+    "KD"
+  ],
+  "lillada01": [
+    "Dame",
+    "Dame Lillard"
+  ],
+  "wembavi01": [
+    "Wemby"
+  ],
+  "anthoca01": [
+    "Melo"
+  ],
+  "iversal01": [
+    "AI",
+    "The Answer"
+  ],
+  "paulch01": [
+    "CP3"
+  ],
+  "davisan02": [
+    "AD"
+  ],
+  "gilgesh01": [
+    "SGA"
+  ],
+  "edwaran01": [
+    "Ant",
+    "Ant Man",
+    "Ant-Man"
+  ],
+  "westbru01": [
+    "Russ"
+  ],
+  "jamesle01": [
+    "Bron",
+    "King James"
+  ],
+  "antetgi01": [
+    "Greek Freak"
+  ],
+  "ervinju01": [
+    "Dr. J",
+    "Doctor J"
+  ],
+  "maravpe01": [
+    "Pistol Pete"
+  ],
+  "malonka01": [
+    "Mailman",
+    "The Mailman"
+  ],
+  "roberos01": [
+    "Big O"
+  ],
+  "mournal01": [
+    "Zo"
+  ],
+  "mcgratr01": [
+    "TMac",
+    "T-Mac"
+  ],
+  "cartevi01": [
+    "VC",
+    "Vinsanity"
+  ],
+  "garneke01": [
+    "KG",
+    "The Big Ticket"
+  ],
+  "piercpa01": [
+    "The Truth"
+  ],
+  "couside01": [
+    "Boogie"
+  ],
+  "wadedw01": [
+    "Flash",
+    "D Wade",
+    "D-Wade"
+  ],
+  "mitchdo01": [
+    "Spida"
+  ],
+  "jokicni01": [
+    "Joker"
+  ],
+  "butleji01": [
+    "Jimmy Buckets"
+  ],
+  "georgpa01": [
+    "PG",
+    "PG13"
+  ],
+  "hardeja01": [
+    "The Beard"
+  ],
+  "barklch01": [
+    "Chuck",
+    "Sir Charles"
+  ],
+  "gervige01": [
+    "Iceman",
+    "The Iceman"
+  ],
+  "paytoga01": [
+    "The Glove"
+  ],
+  "kempsh01": [
+    "Reign Man"
+  ],
+  "bryanko01": [
+    "Mamba",
+    "Black Mamba"
+  ],
+  "jordami01": [
+    "MJ",
+    "Air Jordan"
+  ],
+  "johnsma02": [
+    "Magic"
+  ],
+  "rodmade01": [
+    "The Worm"
+  ],
+  "duncati01": [
+    "The Big Fundamental"
+  ],
+  "nowitdi01": [
+    "Dirk"
+  ],
+  "ginobma01": [
+    "Manu"
+  ],
+  "leonaka01": [
+    "The Klaw"
+  ],
+  "tatumja01": [
+    "JT"
+  ],
+  "embiijo01": [
+    "JoJo",
+    "The Process"
+  ],
+  "willizi01": [
+    "Zion"
+  ],
+  "moranja01": [
+    "Ja"
+  ],
+  "bookede01": [
+    "Book"
+  ],
+  "lowryky01": [
+    "KLow"
+  ],
+  "greendr01": [
+    "Dray"
+  ],
+  "thompkl01": [
+    "Klay"
   ]
 }

@@ -18,10 +18,6 @@ export function playerName(id: string): string | null {
   return NAME_BY_ID.get(id)?.n ?? null;
 }
 
-export function isPlayer(id: unknown): id is string {
-  return typeof id === "string" && NAME_BY_ID.has(id);
-}
-
 export function fameOf(id: string): number {
   return NAME_BY_ID.get(id)?.f ?? 0;
 }
