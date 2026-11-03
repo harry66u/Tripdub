@@ -1,14 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SFResult, StartResponse, StepResponse, WheelName } from "@/games/starting-five/api-types";
 import type { Clue } from "@/games/starting-five/engine/archetype";
 import { gradeLineup } from "@/games/starting-five/engine/grades";
 import type { Action, RunView } from "@/games/starting-five/engine/run";
 import { SLOTS, type Lineup, type SFPlayer, type Slot } from "@/games/starting-five/types";
 import { addDays, puzzleDate } from "@/lib/day";
-import { hashSeed, rng, shuffle } from "@/lib/rng";
 import { deviceId } from "@/lib/client/device";
 import { load, remove, save } from "@/lib/client/storage";
 import { FaceRoulette } from "./FaceRoulette";
@@ -17,6 +16,7 @@ import { HowToPlay } from "./HowToPlay";
 import { LineupBoard } from "./LineupBoard";
 import { PlayerCard } from "./PlayerCard";
 import { ResultView } from "./ResultView";
+import { useFacePool } from "./useFacePool";
 
 type Mode = "daily" | "unlimited";
 
@@ -142,11 +142,7 @@ export function Game() {
     open(initial);
   }, [open]);
 
-  const decoys = useMemo(() => {
-    if (!faces || !s?.current) return [];
-    return shuffle(faces, rng(hashSeed(s.current.id, s.view.index, s.token.length)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [faces, s?.current?.id, s?.view.index]);
+  const facePool = useFacePool(faces);
 
   const spin = () => {
     if (!s?.current || phase !== "idle" || faces == null) return;
@@ -418,14 +414,7 @@ export function Game() {
               ) : (
                 <motion.div key="draw" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {s.current ? (
-                    <FaceRoulette
-                      decoys={decoys}
-                      target={s.current}
-                      spinKey={spinKey}
-                      sound={sound}
-                      landed={false}
-                      onDone={onSpinDone}
-                    />
+                    <FaceRoulette faces={facePool} target={s.current} spinKey={spinKey} sound={sound} onDone={onSpinDone} />
                   ) : (
                     <div className="mx-auto grid h-56 max-w-[440px] place-items-center rounded-[28px] border-[2.5px] border-ink bg-white text-center shadow-[var(--shadow-pop)] sm:h-64">
                       <p className="px-6 text-lg font-extrabold">Your five is locked in.</p>
