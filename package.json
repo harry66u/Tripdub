@@ -10,10 +10,12 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "next build && playwright test",
-    "data": "python3 -I scripts/data/fetch.py --shots && python3 -I scripts/data/build_players.py && python3 -I scripts/data/build_shotcharts.py && python3 -I scripts/data/build_trivia.py",
+    "data": "python3 -I scripts/data/fetch.py --shots && python3 -I scripts/data/build_players.py && python3 -I scripts/data/build_shotcharts.py && python3 -I scripts/data/build_trivia.py && python3 -I scripts/data/build_deepcut.py --strict",
     "schedule": "tsx scripts/schedule/generate.ts",
     "schedule:check": "tsx scripts/schedule/check.ts",
-    "puzzle": "tsx scripts/schedule/puzzle.ts"
+    "puzzle": "tsx scripts/schedule/puzzle.ts",
+    "data:deepcut": "python3 -I scripts/data/build_deepcut.py --strict && python3 -I scripts/data/test_deepcut.py",
+    "deepcut": "python3 -I scripts/data/deepcut_cli.py"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

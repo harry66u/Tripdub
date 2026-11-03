@@ -6,13 +6,16 @@ import { BANK } from "@/games/trivia/server/data";
 import { checkTriviaSchedule } from "@/games/trivia/server/schedule";
 import { CHARTS } from "@/games/shot-chart/server/data";
 import { checkShotSchedule } from "@/games/shot-chart/server/schedule";
-import { readSF, readShot, readTrivia } from "./io";
+import { PROMPTS } from "@/games/deep-cut/server/data";
+import { checkDeepCutSchedule } from "@/games/deep-cut/server/schedule";
+import { readDeep, readSF, readShot, readTrivia } from "./io";
 
 const sf = checkSchedule(readSF(), POOL, puzzleDate());
 const tv = checkTriviaSchedule(readTrivia(), BANK, puzzleDate());
 const sc = checkShotSchedule(readShot(), CHARTS, puzzleDate());
-const errors = [...sf.errors, ...tv.errors, ...sc.errors];
-const warnings = [...sf.warnings, ...tv.warnings, ...sc.warnings];
+const dc = checkDeepCutSchedule(readDeep(), PROMPTS, puzzleDate());
+const errors = [...sf.errors, ...tv.errors, ...sc.errors, ...dc.errors];
+const warnings = [...sf.warnings, ...tv.warnings, ...sc.warnings, ...dc.warnings];
 for (const w of warnings) console.warn(`warning: ${w}`);
 for (const e of errors) console.error(`error: ${e}`);
 if (errors.length) {

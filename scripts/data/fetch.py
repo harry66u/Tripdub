@@ -23,7 +23,7 @@ IDS = "https://raw.githubusercontent.com/djblechn-su/nba-player-team-ids/master/
 BBREF_FILES = [
     "Advanced", "Player Per Game", "Player Totals", "Player Shooting", "Player Play By Play",
     "All-Star Selections", "End of Season Teams", "Player Award Shares", "Player Career Info",
-    "Team Summaries",
+    "Team Summaries", "Draft Pick History", "Team Abbrev",
 ]
 
 

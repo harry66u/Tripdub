@@ -69,9 +69,9 @@ test("unlimited: play a game, then play again against a new team", async ({ page
   expect(await board(page).innerText()).not.toBe(firstOpponent);
 });
 
-test("home lists all three games and opens Starting Five", async ({ page }) => {
+test("home lists all four games and opens Starting Five", async ({ page }) => {
   await page.goto("/");
-  for (const title of ["Starting Five", "NBA Trivia", "Shot Chart"]) {
+  for (const title of ["Starting Five", "NBA Trivia", "Shot Chart", "Deep Cut"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
   await page.getByRole("link", { name: "Play today’s game" }).first().click();

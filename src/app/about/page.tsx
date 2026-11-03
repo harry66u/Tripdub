@@ -41,6 +41,23 @@ export default function About() {
         finalists. You get 100 points for a right answer and up to 200 more for answering fast.
       </p>
 
+      <h2 className="mt-10 text-2xl font-extrabold">Deep Cut</h2>
+      <div className="mt-3 grid gap-3 leading-relaxed">
+        <p>
+          Seven prompts a day, each with many right answers: three general (“played for the Lakers”) and four specific (“made
+          250+ threes in a season”), easier to harder. Name one player in 25 seconds. Rarer answers score more: Layup 10, Too
+          Cute 15, Midrange 30, Three 60, Logo Shot 85, Half-Court 100. Every 10 points is a foot of range, so a perfect 700 is a
+          70-foot heave.
+        </p>
+        <p>
+          Whether an answer counts comes only from Basketball-Reference data (rosters, the draft, awards, season and career
+          totals, colleges, listed heights), built into a full answer list for every prompt ahead of time. Tiers are set before
+          the day goes live from how well-known each player is for that prompt (All-Star picks, awards, career length, era and
+          how long they were with the team, plus a hand-written read on fame with casual fans) and a hand review. Half-Court
+          answers are hand-picked. Everyone gets the same tier for the same answer.
+        </p>
+      </div>
+
       <h2 className="mt-10 text-2xl font-extrabold">Data sources</h2>
       <ul className="mt-3 grid list-disc gap-2 pl-5 leading-relaxed">
         <li>

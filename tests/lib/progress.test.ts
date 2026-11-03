@@ -10,10 +10,16 @@ describe("streaks", () => {
     expect(streaks(all, "2026-11-04").current).toBe(3); // today not played yet: streak still alive
     expect(streaks(all, "2026-11-05").current).toBe(0);
   });
-  it("counts Tripdub days (all three games)", () => {
-    const all = { "2026-11-03": { sf: done, trivia: done, shot: done }, "2026-11-02": { sf: done } };
+  it("counts Tripdub days (all four daily games)", () => {
+    const all = {
+      "2026-11-03": { sf: done, trivia: done, shot: done, deep: done },
+      "2026-11-02": { sf: done, trivia: done, shot: done },
+    };
     expect(streaks(all, "2026-11-03").tripdubs).toBe(1);
     expect(isTripdub(all["2026-11-03"])).toBe(true);
     expect(isTripdub(all["2026-11-02"])).toBe(false);
+  });
+  it("a Deep Cut alone keeps the streak alive", () => {
+    expect(streaks({ "2026-11-02": { sf: done }, "2026-11-03": { deep: done } }, "2026-11-03").current).toBe(2);
   });
 });

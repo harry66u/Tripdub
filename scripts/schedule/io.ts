@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { SFSchedule } from "@/games/starting-five/server/schedule";
 import type { TriviaSchedule } from "@/games/trivia/server/schedule";
 import type { ShotSchedule } from "@/games/shot-chart/server/schedule";
+import type { DCSchedule } from "@/games/deep-cut/server/schedule";
 
 export const SF_PATH = join(process.cwd(), "content", "schedule", "starting-five.json");
 
@@ -43,3 +44,7 @@ export const writeTrivia = (s: TriviaSchedule) => writeJsonSchedule(TRIVIA_PATH,
 export const SHOT_PATH = join(process.cwd(), "content", "schedule", "shot-chart.json");
 export const readShot = () => readJsonSchedule<ShotSchedule>(SHOT_PATH);
 export const writeShot = (s: ShotSchedule) => writeJsonSchedule(SHOT_PATH, s);
+
+export const DEEP_PATH = join(process.cwd(), "content", "schedule", "deep-cut.json");
+export const readDeep = () => readJsonSchedule<DCSchedule>(DEEP_PATH);
+export const writeDeep = (s: DCSchedule) => writeJsonSchedule(DEEP_PATH, s);

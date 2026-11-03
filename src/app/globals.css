@@ -16,6 +16,8 @@
   --color-butter-soft: #fff1c9;
   --color-mint: #5bc9a0;
   --color-mint-soft: #d5f2e7;
+  --color-grape: #b7a2ec;
+  --color-grape-soft: #ece5fc;
 
   --font-display: "Graduate", ui-serif, Georgia, serif;
   --font-sans: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
@@ -187,4 +189,18 @@ body {
 }
 .slot-invite {
   animation: slot-invite 1.6s ease-in-out infinite;
+}
+
+/* Deep Cut: the timer ring drains */
+@keyframes dc-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+.dc-hurry {
+  animation: dc-pulse 0.8s ease-in-out infinite;
 }

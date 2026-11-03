@@ -64,3 +64,41 @@ export function ShotChartPreview() {
     </svg>
   );
 }
+
+export function DeepCutPreview() {
+  // A prompt, a typed answer, and the shot spot creeping out past the three-point line.
+  return (
+    <svg viewBox="0 0 400 150" className="h-full w-full" aria-hidden>
+      <rect x="0" y="0" width="400" height="150" fill="var(--color-sky)" />
+      <g fill="none" stroke="#fff" strokeWidth="3" opacity="0.9">
+        <path d="M0 22 H400 M0 128 H400" />
+        <path d="M0 52 H76 V98 H0" />
+        <path d="M0 30 H66 A70 70 0 0 1 66 120 H0" />
+        <path d="M282 22 V128" />
+        <circle cx="282" cy="75" r="22" />
+      </g>
+      <circle cx="16" cy="75" r="5" fill="none" stroke="var(--color-coral)" strokeWidth="3" />
+      <path d="M16 75 H214" stroke="var(--color-coral)" strokeWidth="4" strokeDasharray="1 9" strokeLinecap="round" />
+      <circle cx="214" cy="75" r="15" fill="var(--color-coral)" opacity="0.3" />
+      <circle cx="214" cy="75" r="9" fill="#fff" stroke="var(--color-ink)" strokeWidth="3" />
+      <rect x="196" y="12" width="190" height="36" rx="12" fill="var(--color-ink)" transform="translate(3 4)" />
+      <rect x="196" y="12" width="190" height="36" rx="12" fill="#fff" stroke="var(--color-ink)" strokeWidth="2.5" />
+      <text x="208" y="35" fontSize="12.5" fontWeight="800" fill="var(--color-ink)" style={{ fontFamily: "var(--font-sans)" }}>
+        Name a former #1 pick
+      </text>
+      {[
+        ["Layup", "var(--color-sky-soft)", 10],
+        ["Three", "var(--color-butter)", 60],
+        ["Half-Court", "var(--color-ink)", 100],
+      ].map(([label, fill, pts], i) => (
+        <g key={i} transform={`translate(${36 + i * 112} 104)`}>
+          <rect x="3" y="4" width="100" height="26" rx="13" fill="var(--color-ink)" />
+          <rect width="100" height="26" rx="13" fill={fill as string} stroke="var(--color-ink)" strokeWidth="2.5" />
+          <text x="50" y="18" textAnchor="middle" fontSize="11" fill={i === 2 ? "#fff" : "var(--color-ink)"} style={{ fontFamily: "var(--font-display)" }}>
+            {`${label} ${pts}`}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}

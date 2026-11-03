@@ -10,7 +10,9 @@ import { BANK } from "@/games/trivia/server/data";
 import { fillTriviaSchedule } from "@/games/trivia/server/schedule";
 import { CHARTS } from "@/games/shot-chart/server/data";
 import { fillShotSchedule } from "@/games/shot-chart/server/schedule";
-import { arg, readSF, readShot, readTrivia, writeSF, writeShot, writeTrivia } from "./io";
+import { PROMPTS } from "@/games/deep-cut/server/data";
+import { fillDeepCutSchedule } from "@/games/deep-cut/server/schedule";
+import { arg, readDeep, readSF, readShot, readTrivia, writeDeep, writeSF, writeShot, writeTrivia } from "./io";
 
 const ahead = Number(arg("days") ?? 730);
 const today = puzzleDate();
@@ -33,3 +35,8 @@ const shot = readShot();
 const addedShot = fillShotSchedule(shot, CHARTS, from, total);
 writeShot(shot);
 console.log(`Shot Chart: added ${addedShot.length} day(s); schedule now covers ${Object.keys(shot.days).length} days through ${end}.`);
+
+const deep = readDeep();
+const addedDeep = fillDeepCutSchedule(deep, PROMPTS, from, total);
+writeDeep(deep);
+console.log(`Deep Cut: added ${addedDeep.length} day(s); schedule now covers ${Object.keys(deep.days).length} days through ${end}.`);

@@ -8,8 +8,8 @@ import { Countdown } from "@/components/common/Countdown";
 import { ShareButton } from "@/components/common/ShareButton";
 import { puzzleDate, puzzleNumber } from "@/lib/day";
 import { combinedShare } from "@/lib/client/combined-share";
-import { allProgress, isTripdub, streaks, type DayProgress, type GameKey } from "@/lib/client/progress";
-import { ShotChartPreview, TriviaPreview } from "./Previews";
+import { allProgress, GAME_KEYS, isTripdub, streaks, type DayProgress, type GameKey } from "@/lib/client/progress";
+import { DeepCutPreview, ShotChartPreview, TriviaPreview } from "./Previews";
 
 type GameCard = { key: GameKey; title: string; href: string; blurb: string };
 
@@ -22,6 +22,7 @@ const SF: GameCard = {
 const MORE: GameCard[] = [
   { key: "trivia", title: "NBA Trivia", href: "/trivia", blurb: "Seven questions built from the record books. The faster you answer, the more you score." },
   { key: "shot", title: "Shot Chart", href: "/shot-chart", blurb: "Five real shot charts, from a star season to a deep cut. Name the player." },
+  { key: "deep", title: "Deep Cut", href: "/deep-cut", blurb: "Seven prompts, endless right answers. Name a player: the rarer the answer, the deeper the shot." },
 ];
 
 function Status({ done }: { done?: { summary: string } }) {
@@ -90,20 +91,20 @@ export function HomeDashboard() {
       window.removeEventListener("focus", refresh);
     };
   }, []);
-  const doneCount = (["sf", "trivia", "shot"] as const).filter((g) => day[g]).length;
+  const doneCount = GAME_KEYS.filter((g) => day[g]).length;
   const tripdub = isTripdub(day);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex gap-1.5" aria-label={`${doneCount} of 3 daily games done`}>
-            {(["sf", "trivia", "shot"] as const).map((g) => (
+          <div className="flex gap-1.5" aria-label={`${doneCount} of ${GAME_KEYS.length} daily games done`}>
+            {GAME_KEYS.map((g) => (
               <span key={g} className={`h-4 w-4 rounded-full border-[2.5px] border-ink ${day[g] ? "bg-coral" : "bg-white"}`} />
             ))}
           </div>
           <p className="text-sm font-bold">
-            {ready ? `${doneCount}/3 today` : "Today"}
+            {ready ? `${doneCount}/${GAME_KEYS.length} today` : "Today"}
             <span className="ml-3 rounded-full bg-white px-2.5 py-1 text-ink shadow-[var(--shadow-pop-sm)] ring-2 ring-ink">
               Streak <span className="varsity">{streak.current}</span>
             </span>
@@ -128,7 +129,7 @@ export function HomeDashboard() {
           <VarsityThree className="h-20 w-20 shrink-0" />
           <div className="flex-1">
             <p className="text-2xl font-extrabold">That’s a Tripdub.</p>
-            <p className="font-semibold">All three daily games done. Come back tomorrow to keep the streak going.</p>
+            <p className="font-semibold">All four daily games done. Come back tomorrow to keep the streak going.</p>
           </div>
           <ShareButton text={combinedShare(puzzleNumber(puzzleDate()), day)} label="Share your Tripdub" />
         </motion.section>
@@ -167,10 +168,10 @@ export function HomeDashboard() {
         </div>
       </section>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2">
+      <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {MORE.map((card) => (
           <section key={card.key} className="pop overflow-hidden rounded-[var(--radius-card)] bg-white">
-            <div className="h-36 border-b-[2.5px] border-ink bg-sky">{card.key === "trivia" ? <TriviaPreview /> : <ShotChartPreview />}</div>
+            <div className="h-36 border-b-[2.5px] border-ink bg-sky">{card.key === "trivia" ? <TriviaPreview /> : card.key === "shot" ? <ShotChartPreview /> : <DeepCutPreview />}</div>
             <div className="p-6">
               <h2 className="text-3xl font-extrabold tracking-tight">{card.title}</h2>
               <p className="mt-2 text-ink-soft">{card.blurb}</p>
