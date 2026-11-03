@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     theme: puzzle.theme,
     opponent,
     clues: opponentClues(opponent),
-    token: issueRunToken({ v: 2, mode, date, salt, ph: puzzleHash(puzzle), device: body.device, actions: [] }),
+    token: issueRunToken({ v: 2, mode, date, salt, ph: puzzleHash(puzzle), device: body.device, rid: randomUUID(), actions: [] }),
     view,
     current: playerById(view.currentId!),
     lineup: {},

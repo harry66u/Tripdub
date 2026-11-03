@@ -22,6 +22,8 @@ export type RunToken = {
   /** Hash of the puzzle the run was dealt, so edits to the schedule can't change a run midway */
   ph: number;
   device: string;
+  /** Random per run, so every run's tokens are unique */
+  rid: string;
   actions: Action[];
 };
 

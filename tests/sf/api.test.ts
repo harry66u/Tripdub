@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const claims = new Map<string, string>();
 vi.mock("@/lib/server/db", () => ({
   recordDailyResult: vi.fn(async () => ({ percentile: 0.75, total: 41 })),
+  claimOnce: vi.fn(async (key: string, value: string) => {
+    const fresh = !claims.has(key);
+    if (fresh) claims.set(key, value);
+    return { value: claims.get(key)!, fresh };
+  }),
 }));
 // The first few finishers shouldn't brag "Top 1%": covered in shareForResult tests below.
 
@@ -63,6 +69,18 @@ describe("daily Starting Five API", () => {
     expect(done.body.mode).toBe("unlimited");
     expect(done.body.percentile).toBeNull();
     expect(recordDailyResult).not.toHaveBeenCalled();
+  });
+
+  it("a spin can only ever be used for one action (no peeking with a copied token)", async () => {
+    const s = await json(await post(start, { device: DEVICE }));
+    const placed = await json(await post(step, { token: s.body.token, action: { t: "place", slot: "PG" } }));
+    expect(placed.status).toBe(200);
+    // Same token, same action: a harmless retry, same answer.
+    const retry = await json(await post(step, { token: s.body.token, action: { t: "place", slot: "PG" } }));
+    expect(retry.status).toBe(200);
+    expect(retry.body.current.id).toBe(placed.body.current.id);
+    // Same token, different action: refused.
+    expect((await post(step, { token: s.body.token, action: { t: "respin" } })).status).toBe(409);
   });
 
   it("rejects an unknown mode", async () => {

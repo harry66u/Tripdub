@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { fail, json, readJson } from "@/lib/server/http";
+import { claimOnce } from "@/lib/server/db";
 import { isAction, replay, RunError } from "@/games/starting-five/engine/run";
 import { playerById } from "@/games/starting-five/server/data";
 import { puzzleHash, runPuzzle } from "@/games/starting-five/server/finish";
@@ -12,6 +14,12 @@ export async function POST(req: Request) {
   if (!isAction(body?.action)) return fail("Unknown action");
   const puzzle = runPuzzle(run);
   if (puzzleHash(puzzle) !== run.ph) return fail("This puzzle was updated. Reload to start it fresh.");
+  // Each spin can only ever take one action: a copied token can't be used to peek at the next player.
+  const key = "s:" + createHash("sha256").update(body!.token as string).digest("hex").slice(0, 40);
+  const claim = await claimOnce(key, JSON.stringify(body.action));
+  if (claim && !claim.fresh && claim.value !== JSON.stringify(body.action)) {
+    return fail("That spin was already used. Reload to continue your game.", 409);
+  }
   const actions = [...run.actions, body.action];
   try {
     const view = replay(puzzle.spins, actions);
