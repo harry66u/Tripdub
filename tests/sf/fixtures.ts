@@ -8,6 +8,7 @@ export function fixturePlayer(
   const { r, ...rest } = overrides;
   return {
     id: `fix${n}`,
+    nbaId: null,
     name: `Fixture Player ${n}`,
     pos: "SF",
     heightIn: 79,

@@ -39,6 +39,7 @@ export type Evaluation = {
 const POSSESSIONS_PER_QUARTER = 25;
 const OT_POSSESSIONS = 6;
 const BASE = { rim: 0.62, mid: 0.41, three: 0.355 } as const;
+const FOUL_RATE = { rim: 0.2, mid: 0.07, three: 0.03 } as const;
 type ShotType = keyof typeof BASE;
 
 type Team = {
@@ -117,9 +118,9 @@ function possession(off: Team, def: Team, r: () => number): number {
     const type: ShotType = roll < mix.rim ? "rim" : roll < mix.rim + mix.mid ? "mid" : "three";
     const box = off.box[si];
 
-    if (type === "rim" && r() < 0.09) {
-      // Fouled on the way up: two free throws.
-      for (let k = 0; k < 2; k++) {
+    if (r() < FOUL_RATE[type]) {
+      // Shooting foul: two free throws, three on a three.
+      for (let k = 0; k < (type === "three" ? 3 : 2); k++) {
         box.fta++;
         if (r() < off.ft[si]) {
           box.ftm++;
@@ -133,13 +134,13 @@ function possession(off: Team, def: Team, r: () => number): number {
     let p: number = BASE[type];
     if (type === "three") {
       p += 0.1 * norm(shooter.r.spc);
-      p -= 0.05 * norm(defender.r.per);
+      p -= 0.08 * norm(defender.r.per);
     } else if (type === "mid") {
       p += 0.12 * norm(shooter.r.sco);
-      p -= 0.08 * norm(defender.r.per);
+      p -= 0.11 * norm(defender.r.per);
     } else {
       p += 0.12 * norm(shooter.r.sco);
-      const rimD = 0.6 * defender.r.rim + 0.4 * def.bestRim;
+      const rimD = 0.7 * defender.r.rim + 0.3 * def.bestRim;
       p -= 0.1 * norm(rimD);
       p += 0.03 * norm(off.spc);
     }

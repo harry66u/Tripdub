@@ -8,6 +8,8 @@ export type RatingKey = "sco" | "ply" | "reb" | "per" | "rim" | "spc";
 export interface SFPlayer {
   /** Basketball-Reference player id, e.g. "jordami01" */
   id: string;
+  /** NBA.com person id, used for the official headshot. */
+  nbaId: number | null;
   name: string;
   /** Natural position label, e.g. "PG" or "SF/PF" */
   pos: string;

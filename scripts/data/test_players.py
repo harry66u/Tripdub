@@ -55,6 +55,12 @@ def main():
     check(get("John Stockton")["r"]["ply"] >= 95, "Stockton ply")
     check(get("Michael Jordan")["tier"] == "legend", "MJ legend")
 
+    with_photo = [p for p in players if isinstance(p.get("nbaId"), int)]
+    check(len(with_photo) >= 0.98 * len(players), f"only {len(with_photo)}/{len(players)} players have an NBA.com id")
+    check(get("LeBron James").get("nbaId") == 2544, "LeBron nbaId")
+    check(get("Michael Jordan").get("nbaId") == 893, "MJ nbaId")
+    check(get("Victor Wembanyama").get("nbaId") == 1641705, "Wemby nbaId")
+
     if failures:
         print(f"FAIL: {len(failures)} problem(s)")
         for f in failures[:40]:

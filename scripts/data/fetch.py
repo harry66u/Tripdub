@@ -5,6 +5,8 @@ Sources
   https://github.com/sumitrodatta/bball-reference-datasets
 - NBA.com regular-season shot locations 2003-04..2024-25, via
   https://github.com/DomSamangy/NBA_Shots_04_25
+- Basketball-Reference <-> NBA.com player id crosswalk (through 2019-20), via
+  https://github.com/djblechn-su/nba-player-team-ids
 
 Usage: python3 -I scripts/data/fetch.py [--shots]
 """
@@ -17,6 +19,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CACHE = os.path.join(ROOT, ".data-cache")
 BBREF = "https://raw.githubusercontent.com/sumitrodatta/bball-reference-datasets/master/Data/"
 SHOTS = "https://raw.githubusercontent.com/DomSamangy/NBA_Shots_04_25/main/"
+IDS = "https://raw.githubusercontent.com/djblechn-su/nba-player-team-ids/master/NBA_Player_IDs.csv"
 BBREF_FILES = [
     "Advanced", "Player Per Game", "Player Totals", "Player Shooting", "Player Play By Play",
     "All-Star Selections", "End of Season Teams", "Player Award Shares", "Player Career Info",
@@ -39,6 +42,7 @@ def download(url, dest):
 def main():
     for name in BBREF_FILES:
         download(BBREF + urllib.parse.quote(name) + ".csv", os.path.join(CACHE, "bbref", name + ".csv"))
+    download(IDS, os.path.join(CACHE, "ids", "nba_ids.csv"))
     if "--shots" in sys.argv:
         for year in range(2004, 2026):
             fn = f"NBA_{year}_Shots.csv.zip"

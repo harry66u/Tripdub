@@ -25,6 +25,17 @@ describe("simulateGame", () => {
     }
   });
 
+  it("draws a realistic number of free throws", () => {
+    let fta = 0;
+    for (let s = 0; s < 50; s++) {
+      const g = simulateGame(home, away, s);
+      for (const t of [g.home, g.away]) fta += SLOTS.reduce((a, k) => a + t.players[k].fta, 0);
+    }
+    const perTeam = fta / 100;
+    expect(perTeam).toBeGreaterThanOrEqual(16);
+    expect(perTeam).toBeLessThanOrEqual(30);
+  });
+
   it("produces realistic scores", () => {
     for (let s = 0; s < 50; s++) {
       const g = simulateGame(home, away, s);
@@ -69,9 +80,10 @@ describe("evaluateMatchup", () => {
     const away: Lineup = lineupOf([shooter, ...flatTeam(55, "Opp").slice(1)]);
     const centerAtC: Lineup = lineupOf([avg[0], avg[1], avg[2], avg[3], center]);
     const centerAtPG: Lineup = lineupOf([center, avg[1], avg[2], avg[3], avg[0]]);
-    const a = evaluateMatchup(centerAtC, away, 9);
-    const b = evaluateMatchup(centerAtPG, away, 9);
-    expect(a.meanMargin - b.meanMargin).toBeGreaterThanOrEqual(1.5);
+    // Enough sims that the gap is signal, not noise (sd of the difference is ~0.4 here).
+    const a = evaluateMatchup(centerAtC, away, 9, 3000);
+    const b = evaluateMatchup(centerAtPG, away, 9, 3000);
+    expect(a.meanMargin - b.meanMargin).toBeGreaterThanOrEqual(1.0);
   });
 
   it("features the median game, consistent with the win probability", () => {

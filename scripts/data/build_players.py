@@ -14,11 +14,14 @@ Method (also explained on the About page):
 """
 import collections
 import csv
+import glob
+import io
 import json
 import math
 import os
 import re
 import unicodedata
+import zipfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(ROOT, ".data-cache", "bbref")
@@ -72,7 +75,34 @@ def strip_accents(s):
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
 
 
+def nba_ids():
+    """bbref id -> NBA.com person id (crosswalk), plus name -> ids from NBA.com shot data for newer players."""
+    cross = {}
+    path = os.path.join(ROOT, ".data-cache", "ids", "nba_ids.csv")
+    with open(path, encoding="latin-1") as f:
+        for r in csv.DictReader(f):
+            if r["BBRefID"] and r["NBAID"].isdigit():
+                cross[r["BBRefID"]] = int(r["NBAID"])
+    by_name = collections.defaultdict(set)
+    for z in sorted(glob.glob(os.path.join(ROOT, ".data-cache", "shots", "*.zip"))):
+        with zipfile.ZipFile(z) as zf:
+            name = next(n for n in zf.namelist() if n.endswith(".csv") and not n.startswith("__"))
+            seen = set()
+            with zf.open(name) as f:
+                for row in csv.DictReader(io.TextIOWrapper(f, encoding="utf-8")):
+                    key = (row["PLAYER_ID"], row["PLAYER_NAME"])
+                    if key not in seen:
+                        seen.add(key)
+                        by_name[name_key(row["PLAYER_NAME"])].add(int(row["PLAYER_ID"]))
+    return cross, by_name
+
+
+def name_key(s):
+    return re.sub(r"[^a-z0-9]+", " ", strip_accents(s).lower()).strip()
+
+
 def main():
+    cross_ids, shot_ids = nba_ids()
     totals = one_row_per_season(load("Player Totals"))
     adv = one_row_per_season(load("Advanced"))
     shooting = one_row_per_season(load("Player Shooting"))
@@ -348,8 +378,13 @@ def main():
         seasons = [k[1] for k in prime]
         mid_start = (min(seasons) + max(seasons)) / 2 - 1
         a = acc[pid]
+        nba_id = cross_ids.get(pid)
+        if nba_id is None:
+            found = shot_ids.get(name_key(c.get("player") or t_rows[0]["player"]), set())
+            nba_id = next(iter(found)) if len(found) == 1 else None
         players.append({
             "id": pid,
+            "nbaId": nba_id,
             "name": c.get("player") or t_rows[0]["player"],
             "pos": pos,
             "heightIn": int(height),
@@ -374,6 +409,9 @@ def main():
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(players, f, ensure_ascii=False, separators=(",", ":"))
     tiers = collections.Counter(p["tier"] for p in players)
+    missing = [p["name"] for p in players if p["nbaId"] is None]
+    if missing:
+        print(f"warning: no NBA.com id for {len(missing)} players: {', '.join(missing[:20])}")
     print(f"wrote {len(players)} players to {os.path.relpath(OUT, ROOT)} "
           f"(latest complete season {latest_complete}); tiers {dict(tiers)}")
 

@@ -152,3 +152,39 @@ body {
     transition-duration: 1ms !important;
   }
 }
+
+/* Starting Five wheel */
+.wheel-landed {
+  fill-opacity: 0;
+  animation: wheel-landed 1.2s ease-out both;
+}
+@keyframes wheel-landed {
+  0% {
+    fill-opacity: 0.75;
+  }
+  35% {
+    fill-opacity: 0.15;
+  }
+  55% {
+    fill-opacity: 0.55;
+  }
+  100% {
+    fill-opacity: 0;
+  }
+}
+
+/* Open slot invites a placement */
+@keyframes slot-invite {
+  0%,
+  100% {
+    box-shadow: var(--shadow-pop-sm);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px var(--color-coral-soft),
+      var(--shadow-pop-sm);
+  }
+}
+.slot-invite {
+  animation: slot-invite 1.6s ease-in-out infinite;
+}

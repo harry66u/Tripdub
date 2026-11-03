@@ -50,7 +50,7 @@ Rules:
 | Every regular-season shot with location and zone | NBA.com stats, via the open `DomSamangy/NBA_Shots_04_25` mirror | 2003-04 to 2024-25 | Shot Chart zones |
 | Trivia questions | Open Trivia Database (CC BY-SA 4.0), filtered to general-knowledge categories and cleaned | ~2,500 usable multiple-choice questions after filtering | Daily Trivia and Trivia 1v1 |
 
-A footer and an About page credit Basketball-Reference, NBA.com, and OpenTDB (attribution is required by CC BY-SA). There are no logos, team marks, or player photos anywhere. Players are shown with names, stats, and original graphics only.
+A footer and an About page credit Basketball-Reference, NBA.com, and OpenTDB (attribution is required by CC BY-SA). There are no logos or team marks anywhere. **Player headshots:** official NBA.com headshots, loaded directly from cdn.nba.com by NBA.com person id (your decision, 2026-11-03; the NBA owns these images, so a takedown request is possible). If a headshot is missing, the player's varsity initials show instead. Photos appear only after a player is revealed (a card after the spin, results, Shot Chart reveals), never before a guess.
 
 The trivia bank covers about a year of dailies, so I'll extend it with more cleaned or hand-written questions before it runs out. The schedule checker warns 60 days ahead of that point.
 
