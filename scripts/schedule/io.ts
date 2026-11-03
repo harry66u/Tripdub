@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SFSchedule } from "@/games/starting-five/server/schedule";
 import type { TriviaSchedule } from "@/games/trivia/server/schedule";
+import type { ShotSchedule } from "@/games/shot-chart/server/schedule";
 
 export const SF_PATH = join(process.cwd(), "content", "schedule", "starting-five.json");
 
@@ -38,3 +39,7 @@ export function writeJsonSchedule(path: string, s: { version: number; days: Reco
 
 export const readTrivia = () => readJsonSchedule<TriviaSchedule>(TRIVIA_PATH);
 export const writeTrivia = (s: TriviaSchedule) => writeJsonSchedule(TRIVIA_PATH, s);
+
+export const SHOT_PATH = join(process.cwd(), "content", "schedule", "shot-chart.json");
+export const readShot = () => readJsonSchedule<ShotSchedule>(SHOT_PATH);
+export const writeShot = (s: ShotSchedule) => writeJsonSchedule(SHOT_PATH, s);

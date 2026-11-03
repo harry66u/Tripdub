@@ -8,7 +8,9 @@ import { POOL } from "@/games/starting-five/server/data";
 import { fillSchedule } from "@/games/starting-five/server/schedule";
 import { BANK } from "@/games/trivia/server/data";
 import { fillTriviaSchedule } from "@/games/trivia/server/schedule";
-import { arg, readSF, readTrivia, writeSF, writeTrivia } from "./io";
+import { CHARTS } from "@/games/shot-chart/server/data";
+import { fillShotSchedule } from "@/games/shot-chart/server/schedule";
+import { arg, readSF, readShot, readTrivia, writeSF, writeShot, writeTrivia } from "./io";
 
 const ahead = Number(arg("days") ?? 730);
 const today = puzzleDate();
@@ -26,3 +28,8 @@ const trivia = readTrivia();
 const addedTrivia = fillTriviaSchedule(trivia, BANK, from, total);
 writeTrivia(trivia);
 console.log(`Trivia: added ${addedTrivia.length} day(s); schedule now covers ${Object.keys(trivia.days).length} days through ${end}.`);
+
+const shot = readShot();
+const addedShot = fillShotSchedule(shot, CHARTS, from, total);
+writeShot(shot);
+console.log(`Shot Chart: added ${addedShot.length} day(s); schedule now covers ${Object.keys(shot.days).length} days through ${end}.`);

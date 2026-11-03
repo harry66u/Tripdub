@@ -4,12 +4,15 @@ import { POOL } from "@/games/starting-five/server/data";
 import { checkSchedule } from "@/games/starting-five/server/schedule";
 import { BANK } from "@/games/trivia/server/data";
 import { checkTriviaSchedule } from "@/games/trivia/server/schedule";
-import { readSF, readTrivia } from "./io";
+import { CHARTS } from "@/games/shot-chart/server/data";
+import { checkShotSchedule } from "@/games/shot-chart/server/schedule";
+import { readSF, readShot, readTrivia } from "./io";
 
 const sf = checkSchedule(readSF(), POOL, puzzleDate());
 const tv = checkTriviaSchedule(readTrivia(), BANK, puzzleDate());
-const errors = [...sf.errors, ...tv.errors];
-const warnings = [...sf.warnings, ...tv.warnings];
+const sc = checkShotSchedule(readShot(), CHARTS, puzzleDate());
+const errors = [...sf.errors, ...tv.errors, ...sc.errors];
+const warnings = [...sf.warnings, ...tv.warnings, ...sc.warnings];
 for (const w of warnings) console.warn(`warning: ${w}`);
 for (const e of errors) console.error(`error: ${e}`);
 if (errors.length) {
