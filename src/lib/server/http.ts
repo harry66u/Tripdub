@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -20,10 +21,16 @@ export async function readJson(req: Request): Promise<Record<string, unknown> | 
   }
 }
 
+/**
+ * HMAC key for run tokens. RUN_TOKEN_SECRET if set; otherwise derived from DB_SERVER_SECRET,
+ * so a deployment only needs one secret.
+ */
 export function runSecret(): string {
   const s = process.env.RUN_TOKEN_SECRET;
   if (s && s.length >= 16) return s;
-  if (process.env.NODE_ENV === "production") throw new Error("RUN_TOKEN_SECRET is not set");
+  const db = process.env.DB_SERVER_SECRET;
+  if (db && db.length >= 16) return createHash("sha256").update(`tripdub-run-token:${db}`).digest("hex");
+  if (process.env.NODE_ENV === "production") throw new Error("Set DB_SERVER_SECRET (or RUN_TOKEN_SECRET)");
   return "dev-only-run-token-secret-change-me";
 }
 
