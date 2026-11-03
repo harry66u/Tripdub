@@ -4,7 +4,9 @@ import { motion } from "motion/react";
 import type { Clue } from "@/games/starting-five/engine/archetype";
 import type { GameResult, PlayerBox } from "@/games/starting-five/engine/sim";
 import { SLOTS, type Lineup, type SFPlayer, type Slot } from "@/games/starting-five/types";
+import { matchupEdge } from "@/games/starting-five/engine/matchup";
 import { Headshot } from "./Headshot";
+import { EdgeChip } from "./MatchupPreview";
 import { TeamLogo } from "./TeamArt";
 
 type Props = {
@@ -87,7 +89,14 @@ export function LineupBoard({ opponent, clues, lineup, pending, preview, busy, d
                       </span>
                       {!result && <Lock />}
                     </p>
-                    {result ? <BoxLine b={result.home.players[slot]} /> : <p className="truncate text-xs text-ink-soft">{mine.team.abbr}, {mine.pos}</p>}
+                    {result ? (
+                      <BoxLine b={result.home.players[slot]} />
+                    ) : (
+                      <p className="flex items-center gap-1.5 truncate text-xs text-ink-soft">
+                        {mine.team.abbr}, {mine.pos}
+                        <EdgeChip edge={matchupEdge(mine, theirs)} compact />
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               ) : previewing ? (

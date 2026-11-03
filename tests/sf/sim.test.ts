@@ -97,7 +97,7 @@ describe("evaluateMatchup", () => {
       const m = ev.featured.home.score - ev.featured.away.score;
       if (Math.abs(ev.meanMargin) > 2) expect(Math.sign(m)).toBe(Math.sign(ev.meanMargin));
       expect(Math.abs(m - ev.meanMargin)).toBeLessThan(ev.sdMargin);
-      expect(simulateGame(lineupOf(flatTeam(h)), lineupOf(flatTeam(a)), ev.featuredSeed)).toEqual(ev.featured);
+      expect(simulateGame(lineupOf(flatTeam(h)), lineupOf(flatTeam(a)), ev.featuredSeed, { log: true })).toEqual(ev.featured);
     }
   });
 

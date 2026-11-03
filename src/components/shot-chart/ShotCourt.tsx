@@ -123,24 +123,25 @@ export function ShotCourt({ zones, fga, fgPct }: { zones: Record<ZoneId, ServedZ
           <circle cx={HOOP.x} cy={HOOP.y} r="7.5" stroke="var(--color-coral-deep)" />
           <path d={`M190,${H} A60,60 0 0 1 310,${H}`} />
         </g>
-        {/* labels: share of his shots from each zone */}
+        {/* labels: made/taken in each zone, FG% underneath */}
         <g pointerEvents="none" style={{ fontFamily: "var(--font-display)" }} fill="var(--color-ink)" textAnchor="middle">
           {(Object.keys(LABEL_AT) as ZoneId[]).map((id) => {
             const [x, y] = LABEL_AT[id];
+            const zone = zones[id];
             const corner = id === "c3_l" || id === "c3_r";
-            const share = zones[id].a ? `${Math.round(zones[id].share * 100)}%` : "–";
+            const made = zone.a ? `${zone.m}/${zone.a}` : "0/0";
             return corner ? (
-              <text key={id} x={x} y={y} fontSize="15" transform={`rotate(-90 ${x} ${y})`} dy="0.35em">
-                {share}
+              <text key={id} x={x} y={y + 10} fontSize="14" transform={`rotate(-90 ${x} ${y + 10})`} dy="0.35em">
+                {made}
               </text>
             ) : (
               <g key={id}>
-                <text x={x} y={y} fontSize="22">
-                  {share}
+                <text x={x} y={y} fontSize={zone.a >= 1000 ? 18 : 21}>
+                  {made}
                 </text>
-                {zones[id].pct != null && (
-                  <text x={x} y={y + 20} fontSize="13" opacity="0.75">
-                    {(zones[id].pct! * 100).toFixed(1)}
+                {zone.pct != null && (
+                  <text x={x} y={y + 19} fontSize="13" opacity="0.75">
+                    {(zone.pct * 100).toFixed(1)}%
                   </text>
                 )}
               </g>
@@ -172,7 +173,7 @@ export function ShotCourt({ zones, fga, fgPct }: { zones: Record<ZoneId, ServedZ
           <span>Cold</span>
           <span className="h-3 w-24 rounded-full border-2 border-ink" style={{ background: "linear-gradient(90deg, rgb(62,124,194), rgb(243,238,230), rgb(229,83,63))" }} />
           <span>Hot vs league</span>
-          <span className="ml-2">Faint = few shots</span>
+          <span className="ml-2">Made/taken in each zone. Faint = few shots</span>
         </div>
       </div>
     </div>

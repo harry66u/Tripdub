@@ -15,6 +15,7 @@ import { FaceRoulette } from "./FaceRoulette";
 import { GradeBars } from "./GradeBars";
 import { HowToPlay } from "./HowToPlay";
 import { LineupBoard } from "./LineupBoard";
+import { MatchupPreview, TipoffPreview } from "./MatchupPreview";
 import { PlayerCard } from "./PlayerCard";
 import { ResultView } from "./ResultView";
 import { useFacePool } from "./useFacePool";
@@ -478,6 +479,10 @@ export function Game() {
                 onLock={(slot) => void lock(slot)}
               />
             </div>
+            {pending && preview && <MatchupPreview slot={preview} mine={pending} theirs={s.opponent[preview]} />}
+            {(phase === "complete" || phase === "simulating") && SLOTS.every((k) => s.lineup[k]) && (
+              <TipoffPreview lineup={s.lineup as Lineup} opponent={s.opponent} theme={s.theme} />
+            )}
             <div className="pop rounded-[var(--radius-card)] bg-white p-4 sm:p-5">
               <h2 className="mb-1 text-lg font-extrabold">Lineup grades</h2>
               <p className="mb-4 text-sm text-ink-soft">

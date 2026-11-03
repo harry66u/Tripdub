@@ -19,12 +19,34 @@ export type PlayerBox = {
 
 export type TeamBox = { score: number; quarters: number[]; players: Record<Slot, PlayerBox> };
 
+export type PlayKind = "rim" | "mid" | "three" | "ft" | "block" | "steal";
+
+/** One moment of the featured game, for the play-by-play replay. */
+export type Play = {
+  /** Period (1-4, then overtimes) */
+  q: number;
+  /** Seconds left in the period */
+  t: number;
+  side: "home" | "away";
+  slot: Slot;
+  kind: PlayKind;
+  /** Points scored on the play (free throws: how many went in) */
+  pts: number;
+  /** Assisting teammate, or the player who was blocked / stripped */
+  other?: Slot;
+  h: number;
+  a: number;
+};
+
 export type GameResult = {
   home: TeamBox;
   away: TeamBox;
   leadChanges: number;
   biggestLead: { side: "home" | "away"; pts: number };
+  plays?: Play[];
 };
+
+type Emit = (team: Team, kind: PlayKind, slot: number, pts: number, other?: number) => void;
 
 export type Evaluation = {
   /** Probability the home lineup wins, 0..1 */
@@ -99,14 +121,18 @@ function excluding(weights: number[], i: number): number[] {
   return weights.map((w, j) => (j === i ? 0 : w));
 }
 
-function possession(off: Team, def: Team, r: () => number): number {
+function possession(off: Team, def: Team, r: () => number, emit?: Emit): number {
   // Turnover: good playmaking protects the ball; active hands take it away.
   const defPer = def.players.reduce((s, p) => s + p.r.per, 0) / 5;
   const pTo = 0.16 - (0.06 * off.ply) / 100 + 0.02 * norm(defPer);
   if (r() < pTo) {
     const h = weightedIndex(off.handlerW, r);
     off.box[h].tov++;
-    if (r() < 0.5) def.box[weightedIndex(def.stealW, r)].stl++;
+    if (r() < 0.5) {
+      const st = weightedIndex(def.stealW, r);
+      def.box[st].stl++;
+      emit?.(def, "steal", st, 0, h);
+    }
     return 0;
   }
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -120,14 +146,17 @@ function possession(off: Team, def: Team, r: () => number): number {
 
     if (r() < FOUL_RATE[type]) {
       // Shooting foul: two free throws, three on a three.
+      let made = 0;
       for (let k = 0; k < (type === "three" ? 3 : 2); k++) {
         box.fta++;
         if (r() < off.ft[si]) {
           box.ftm++;
           box.pts++;
           off.score++;
+          made++;
         }
       }
+      emit?.(off, "ft", si, made);
       return 1;
     }
 
@@ -156,13 +185,20 @@ function possession(off: Team, def: Team, r: () => number): number {
       box.pts += pts;
       off.score += pts;
       // Teams with real playmakers assist on more of their buckets.
-      if (r() < 0.45 + (0.25 * off.ply) / 100) off.box[weightedIndex(excluding(off.passW, si), r)].ast++;
+      let assist: number | undefined;
+      if (r() < 0.45 + (0.25 * off.ply) / 100) {
+        assist = weightedIndex(excluding(off.passW, si), r);
+        off.box[assist].ast++;
+      }
+      emit?.(off, type, si, pts, assist);
       return 1;
     }
     if (type === "rim" && r() < 0.4) {
       const bw = def.blockW.slice();
       bw[si] *= 2;
-      def.box[weightedIndex(bw, r)].blk++;
+      const bk = weightedIndex(bw, r);
+      def.box[bk].blk++;
+      emit?.(def, "block", bk, 0, si);
     }
     const pOreb = 0.27 + (0.1 * (off.reb - def.reb)) / 100;
     if (r() < pOreb) {
@@ -175,13 +211,30 @@ function possession(off: Team, def: Team, r: () => number): number {
   return 1;
 }
 
-export function simulateGame(home: Lineup, away: Lineup, seed: number): GameResult {
+export function simulateGame(home: Lineup, away: Lineup, seed: number, opts: { log?: boolean } = {}): GameResult {
   const r = rng(seed);
   const h = prepare(home);
   const a = prepare(away);
   let leadChanges = 0;
   let leader: "home" | "away" | null = null;
   let biggest = { side: "home" as "home" | "away", pts: 0 };
+  const plays: Play[] | null = opts.log ? [] : null;
+  let clock = { q: 1, t: 720 };
+  // Recording only: never draws from the RNG, so a logged game is the same game.
+  const emit: Emit | undefined = plays
+    ? (team, kind, slot, pts, other) =>
+        plays.push({
+          q: clock.q,
+          t: Math.round(clock.t),
+          side: team === h ? "home" : "away",
+          slot: SLOTS[slot],
+          kind,
+          pts,
+          ...(other != null ? { other: SLOTS[other] } : {}),
+          h: h.score,
+          a: a.score,
+        })
+    : undefined;
   const track = () => {
     const diff = h.score - a.score;
     const now = diff > 0 ? "home" : diff < 0 ? "away" : leader;
@@ -189,27 +242,30 @@ export function simulateGame(home: Lineup, away: Lineup, seed: number): GameResu
     leader = now;
     if (Math.abs(diff) > biggest.pts) biggest = { side: diff > 0 ? "home" : "away", pts: Math.abs(diff) };
   };
-  const period = (n: number) => {
+  const period = (q: number, n: number, seconds: number) => {
     const hs = h.score;
     const as = a.score;
+    const step = seconds / (2 * n);
     for (let i = 0; i < n; i++) {
-      possession(h, a, r);
+      clock = { q, t: seconds - step * (2 * i + 1) };
+      possession(h, a, r, emit);
       track();
-      possession(a, h, r);
+      clock = { q, t: seconds - step * (2 * i + 2) };
+      possession(a, h, r, emit);
       track();
     }
     h.quarters.push(h.score - hs);
     a.quarters.push(a.score - as);
   };
-  for (let q = 0; q < 4; q++) period(POSSESSIONS_PER_QUARTER);
-  while (h.score === a.score) period(OT_POSSESSIONS);
+  for (let q = 1; q <= 4; q++) period(q, POSSESSIONS_PER_QUARTER, 720);
+  for (let q = 5; h.score === a.score; q++) period(q, OT_POSSESSIONS, 300);
 
   const toBox = (t: Team): TeamBox => ({
     score: t.score,
     quarters: t.quarters,
     players: Object.fromEntries(SLOTS.map((s, i) => [s, t.box[i]])) as Record<Slot, PlayerBox>,
   });
-  return { home: toBox(h), away: toBox(a), leadChanges, biggestLead: biggest };
+  return { home: toBox(h), away: toBox(a), leadChanges, biggestLead: biggest, ...(plays ? { plays } : {}) };
 }
 
 /** Standard normal CDF (Abramowitz-Stegun 7.1.26 erf approximation). */
@@ -252,7 +308,7 @@ export function evaluateMatchup(home: Lineup, away: Lineup, baseSeed: number, n 
     winProb,
     meanMargin: mean,
     sdMargin: sd,
-    featured: simulateGame(home, away, seeds[best]),
+    featured: simulateGame(home, away, seeds[best], { log: true }),
     featuredSeed: seeds[best],
   };
 }

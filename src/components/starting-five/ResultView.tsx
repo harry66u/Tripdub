@@ -9,6 +9,7 @@ import { formatWinProb, topPercent } from "@/games/starting-five/engine/format";
 import { BoxScore } from "./BoxScore";
 import { GradeBars } from "./GradeBars";
 import { LineupBoard } from "./LineupBoard";
+import { LiveSim } from "./LiveSim";
 
 const QUARTER_MS = 620;
 
@@ -42,10 +43,10 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
   const label = (i: number) => (i < 4 ? `Q${i + 1}` : periods === 5 ? "OT" : `OT${i - 3}`);
   return (
     <section className="rounded-[var(--radius-card)] border-[2.5px] border-ink bg-ink p-5 text-white shadow-[var(--shadow-pop-lg)] sm:p-7">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
         <div>
           <p className="text-sm font-semibold text-sky">Your five</p>
-          <CountUp value={upTo(g.home.quarters)} className="varsity tnum block text-6xl leading-none sm:text-7xl" />
+          <CountUp value={upTo(g.home.quarters)} className="varsity tnum block text-5xl leading-none sm:text-7xl" />
         </div>
         <div className="text-center">
           {done ? (
@@ -63,8 +64,8 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
           <p className="mt-2 text-xs font-semibold text-sky">{done ? (periods > 4 ? "Final, overtime" : "Final") : "Live sim"}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm font-semibold text-sky">{result.theme}</p>
-          <CountUp value={upTo(g.away.quarters)} className="varsity tnum block text-6xl leading-none sm:text-7xl" />
+          <p className="truncate text-sm font-semibold text-sky">{result.theme}</p>
+          <CountUp value={upTo(g.away.quarters)} className="varsity tnum block text-5xl leading-none sm:text-7xl" />
         </div>
       </div>
       <table className="tnum mt-5 w-full text-center text-sm">
@@ -99,9 +100,10 @@ function Scoreboard({ result, stage }: { result: SFResult; stage: number }) {
 
 export function ResultView({ result, animate, actions }: { result: SFResult; animate: boolean; actions?: React.ReactNode }) {
   const periods = result.featured.home.quarters.length;
+  const [live, setLive] = useState(animate && !!result.featured.plays?.length);
   const [stage, setStage] = useState(animate ? 0 : periods);
   useEffect(() => {
-    if (!animate) return;
+    if (!animate || live) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       setStage(periods);
@@ -112,10 +114,21 @@ export function ResultView({ result, animate, actions }: { result: SFResult; ani
       i++;
       setStage(i);
       if (i >= periods) clearInterval(t);
-    }, QUARTER_MS);
+    }, QUARTER_MS / 3);
     return () => clearInterval(t);
-  }, [animate, periods]);
+  }, [animate, live, periods]);
   const done = stage >= periods;
+  if (live) {
+    return (
+      <LiveSim
+        result={result}
+        onDone={() => {
+          setLive(false);
+          setStage(periods);
+        }}
+      />
+    );
+  }
   const reveal = (i: number) => ({
     initial: { opacity: 0, y: 14 },
     animate: done ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 },
