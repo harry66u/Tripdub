@@ -8,7 +8,16 @@ export function SiteHeader() {
         <Link href="/" className="shrink-0" aria-label="Tripdub home">
           <LogoMark className="h-10 w-auto" />
         </Link>
-        <nav className="flex items-center gap-2 text-sm font-semibold">
+        <nav className="flex items-center gap-1 text-sm font-semibold sm:gap-2">
+          <Link href="/starting-five" className="hidden rounded-full px-3 py-2 hover:bg-white/50 md:inline">
+            Starting Five
+          </Link>
+          <Link href="/trivia" className="hidden rounded-full px-3 py-2 hover:bg-white/50 md:inline">
+            NBA Trivia
+          </Link>
+          <Link href="/shot-chart" className="hidden rounded-full px-3 py-2 hover:bg-white/50 md:inline">
+            Shot Chart
+          </Link>
           <Link href="/about" className="rounded-full px-3 py-2 hover:bg-white/50">
             How it works
           </Link>
