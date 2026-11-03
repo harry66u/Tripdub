@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { WheelName } from "@/games/starting-five/api-types";
-import { headshotUrl } from "./Headshot";
+import { headshotCandidates } from "./headshot-urls";
 
 export type Face = { n: string; t: WheelName["t"]; url: string | null };
 
 const POOL_SIZE = 40;
 
-/** Try the small headshot, then the large one; resolve to whichever URL actually loads. */
-function loadFace(id: number): Promise<string | null> {
+/** Try that season's photo, then the latest (small, then large); resolve to whichever loads. */
+function loadFace(n: WheelName): Promise<string | null> {
   const attempt = (url: string) =>
     new Promise<string | null>((resolve) => {
       const img = new Image();
@@ -18,7 +18,9 @@ function loadFace(id: number): Promise<string | null> {
       img.onerror = () => resolve(null);
       img.src = url;
     });
-  return attempt(headshotUrl(id, "sm")).then((ok) => ok ?? attempt(headshotUrl(id, "lg")));
+  const subject = { nbaId: n.i, season: n.s, team: n.tm ? { abbr: "", name: n.tm } : undefined };
+  const urls = [...headshotCandidates(subject, "sm"), ...headshotCandidates({ nbaId: n.i }, "lg")];
+  return urls.reduce<Promise<string | null>>((p, url) => p.then((ok) => ok ?? attempt(url)), Promise.resolve(null));
 }
 
 /**
@@ -39,7 +41,7 @@ export function useFacePool(names: WheelName[] | null): Face[] {
       .slice(0, POOL_SIZE)
       .map((x) => x.n);
     for (const n of ranked) {
-      void loadFace(n.i!).then((url) => {
+      void loadFace(n).then((url) => {
         if (!cancelled && url) setLoaded((prev) => (prev.some((f) => f.n === n.n) ? prev : [...prev, { n: n.n, t: n.t, url }]));
       });
     }

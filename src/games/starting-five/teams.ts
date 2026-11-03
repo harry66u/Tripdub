@@ -37,6 +37,33 @@ const NBA_TEAM_IDS: Record<string, number> = {
   "Washington Wizards": 1610612764,
 };
 
+/** Historical names, mapped to today's franchise (NBA.com files photos under the franchise id). */
+const FRANCHISE_OF: Record<string, string> = {
+  "St. Louis Hawks": "Atlanta Hawks",
+  "New Jersey Nets": "Brooklyn Nets",
+  "Charlotte Bobcats": "Charlotte Hornets",
+  "Philadelphia Warriors": "Golden State Warriors",
+  "San Francisco Warriors": "Golden State Warriors",
+  "Buffalo Braves": "Los Angeles Clippers",
+  "Minneapolis Lakers": "Los Angeles Lakers",
+  "Vancouver Grizzlies": "Memphis Grizzlies",
+  "New Orleans Hornets": "New Orleans Pelicans",
+  "New Orleans Jazz": "Utah Jazz",
+  "Seattle SuperSonics": "Oklahoma City Thunder",
+  "Syracuse Nationals": "Philadelphia 76ers",
+  "Kansas City Kings": "Sacramento Kings",
+  "Kansas City-Omaha Kings": "Sacramento Kings",
+  "Cincinnati Royals": "Sacramento Kings",
+  "Rochester Royals": "Sacramento Kings",
+  "Washington Bullets": "Washington Wizards",
+  "Baltimore Bullets": "Washington Wizards",
+};
+
+/** NBA.com franchise id for any team name in the pool, historical names included. */
+export function franchiseId(teamName: string): number | null {
+  return NBA_TEAM_IDS[teamName] ?? NBA_TEAM_IDS[FRANCHISE_OF[teamName] ?? ""] ?? null;
+}
+
 /** [jersey, trim] */
 const COLORS: Record<string, [string, string]> = {
   "Atlanta Hawks": ["#C8102E", "#FDB927"],

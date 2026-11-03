@@ -9,7 +9,7 @@ export function GET() {
   for (const p of POOL) {
     if (seen.has(p.pid)) continue;
     seen.add(p.pid);
-    names.push({ n: p.name, t: p.tier, i: p.nbaId });
+    names.push({ n: p.name, t: p.tier, i: p.nbaId, s: p.season, tm: p.team.name });
   }
   return new Response(JSON.stringify(names), {
     headers: { "content-type": "application/json", "cache-control": "public, max-age=86400, s-maxage=86400" },

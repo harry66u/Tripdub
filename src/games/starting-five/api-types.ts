@@ -25,5 +25,5 @@ export type StepResponse = {
   lineup: Partial<Record<Slot, SFPlayer>>;
 };
 
-/** A face for the roulette: name, tier, NBA.com id */
-export type WheelName = { n: string; t: SFPlayer["tier"]; i: number | null };
+/** A face for the roulette: name, tier, NBA.com id, and the season/team its photo should come from */
+export type WheelName = { n: string; t: SFPlayer["tier"]; i: number | null; s?: number; tm?: string };

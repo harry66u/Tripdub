@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hashSeed, rng, shuffle } from "@/lib/rng";
 import type { SFPlayer } from "@/games/starting-five/types";
-import { Headshot, headshotUrl } from "./Headshot";
+import { Headshot } from "./Headshot";
+import { headshotCandidates } from "./headshot-urls";
 import type { Face } from "./useFacePool";
 
 const FRAMES = 26;
@@ -71,8 +72,9 @@ export function FaceRoulette({ faces, target, spinKey, sound, onDone }: Roulette
   soundRef.current = sound;
 
   useEffect(() => {
-    if (target.nbaId != null) new Image().src = headshotUrl(target.nbaId, "lg");
-  }, [target.nbaId]);
+    // Warm the target's photo (season first) so the landing frame is instant.
+    for (const url of headshotCandidates(target, "lg")) new Image().src = url;
+  }, [target]);
 
   useEffect(() => {
     setFrame(-1);
