@@ -9,6 +9,7 @@ import type { Action, RunView } from "@/games/starting-five/engine/run";
 import { SLOTS, type Lineup, type SFPlayer, type Slot } from "@/games/starting-five/types";
 import { addDays, puzzleDate } from "@/lib/day";
 import { deviceId } from "@/lib/client/device";
+import { markDailyDone } from "@/lib/client/progress";
 import { load, remove, save } from "@/lib/client/storage";
 import { FaceRoulette } from "./FaceRoulette";
 import { GradeBars } from "./GradeBars";
@@ -198,6 +199,15 @@ export function Game() {
     try {
       const result = await api<SFResult>("/api/sf/daily/finish", { token: s.token });
       persist({ ...s, result });
+      if (result.mode === "daily") {
+        const won = result.featured.home.score > result.featured.away.score;
+        markDailyDone(
+          "sf",
+          result.date,
+          `${won ? "W" : "L"} ${result.featured.home.score}–${result.featured.away.score}, ${Math.round(result.winProb * 100)}% win prob`,
+          result.share,
+        );
+      }
       setAnimateResult(true);
       setPhase("result");
       window.scrollTo({ top: 0, behavior: "smooth" });
