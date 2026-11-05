@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Height of the sticky site header (two rows on phones) */
+:root {
+  --header-h: 6.1rem;
+}
+@media (min-width: 48rem) {
+  :root {
+    --header-h: 4rem;
+  }
+}
+
 @theme {
   /* Sampled from the Tripdub icon set */
   --color-wash: #eff5fa;
@@ -119,6 +129,11 @@ body {
     cursor: not-allowed;
     opacity: 0.55;
     transform: none;
+    box-shadow: var(--shadow-pop-sm);
+  }
+  .btn-sm {
+    padding: 0.45rem 0.95rem;
+    font-size: 0.875rem;
     box-shadow: var(--shadow-pop-sm);
   }
   .btn-coral {

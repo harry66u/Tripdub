@@ -2,7 +2,7 @@
 
 export function TriviaPreview() {
   return (
-    <svg viewBox="0 0 400 150" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
       <rect x="0" y="0" width="400" height="150" fill="var(--color-sky)" />
       <rect x="40" y="18" width="266" height="10" rx="5" fill="#fff" stroke="var(--color-ink)" strokeWidth="2.5" />
       <rect x="40" y="18" width="180" height="10" rx="5" fill="var(--color-coral)" />
@@ -34,7 +34,7 @@ export function TriviaPreview() {
 export function ShotChartPreview() {
   // A tiny hot/cold court: hoop at the top.
   return (
-    <svg viewBox="0 0 400 150" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
       <rect x="0" y="0" width="400" height="150" fill="var(--color-sky)" />
       <g transform="translate(110 8) scale(0.38)">
         <clipPath id="pv-court">
@@ -68,7 +68,7 @@ export function ShotChartPreview() {
 export function DeepCutPreview() {
   // A prompt, a typed answer, and the shot spot creeping out past the three-point line.
   return (
-    <svg viewBox="0 0 400 150" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
       <rect x="0" y="0" width="400" height="150" fill="var(--color-sky)" />
       <g fill="none" stroke="#fff" strokeWidth="3" opacity="0.9">
         <path d="M0 22 H400 M0 128 H400" />
@@ -99,6 +99,76 @@ export function DeepCutPreview() {
           </text>
         </g>
       ))}
+    </svg>
+  );
+}
+
+export function StartingFivePreview() {
+  // Five slots on a half-court.
+  return (
+    <svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
+      <rect x="0" y="0" width="400" height="150" fill="var(--color-sky)" />
+      <g fill="none" stroke="#fff" strokeWidth="3" opacity="0.85">
+        <path d="M70 150 V110 A130 130 0 0 1 330 110 V150" />
+        <rect x="160" y="78" width="80" height="72" />
+        <circle cx="200" cy="78" r="26" />
+      </g>
+      {["PG", "SG", "SF", "PF", "C"].map((slot, i) => {
+        const [x, y] = [[200, 34], [306, 64], [94, 64], [268, 118], [132, 118]][i];
+        return (
+          <g key={slot}>
+            <circle cx={x + 2.5} cy={y + 3.5} r="21" fill="var(--color-ink)" />
+            <circle cx={x} cy={y} r="21" fill="#fff" stroke="var(--color-ink)" strokeWidth="3" />
+            <text x={x} y={y + 5.5} textAnchor="middle" fontSize="15" fill="var(--color-ink)" style={{ fontFamily: "var(--font-display)" }}>
+              {slot}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** The featured card's art: a top-down court, the rim, your shot spot out past the arc, and the tier tag. */
+export function DeepCutFeature() {
+  return (
+    <svg viewBox="0 0 520 220" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
+      <rect width="520" height="220" fill="var(--color-ink)" />
+      <rect x="0" y="16" width="520" height="188" fill="var(--color-sky)" />
+      {Array.from({ length: 26 }, (_, i) => (
+        <rect key={i} x={0} y={16 + i * 7.3} width="520" height="3.6" fill="#fff" opacity="0.06" />
+      ))}
+      <g fill="none" stroke="#fff" strokeWidth="3.5" opacity="0.95">
+        <path d="M0 16 H520 M0 204 H520" />
+        <rect x="0" y="78" width="96" height="64" fill="var(--color-sky-deep)" fillOpacity="0.5" />
+        <path d="M96 86 A24 24 0 0 1 96 134" />
+        <path d="M0 26 H54 A140 140 0 0 1 54 194 H0" />
+        <path d="M402 16 V204" />
+        <circle cx="402" cy="110" r="36" fill="var(--color-sky-soft)" />
+      </g>
+      <text x="404" y="124" textAnchor="middle" fontSize="40" fill="var(--color-coral)" style={{ fontFamily: "var(--font-display)" }}>
+        3
+      </text>
+      <circle cx="22" cy="110" r="7" fill="none" stroke="var(--color-coral)" strokeWidth="3.5" />
+      <path d="M30 110 H300" stroke="var(--color-coral)" strokeWidth="4" strokeDasharray="1 10" strokeLinecap="round" />
+      <path d="M318 40 V196" stroke="#fff" strokeWidth="2.5" strokeDasharray="7 6" opacity="0.9" />
+      <circle cx="318" cy="110" r="24" fill="var(--color-coral)" opacity="0.3" />
+      <circle cx="318" cy="110" r="15" fill="#f28a3c" stroke="var(--color-ink)" strokeWidth="3.5" />
+      <path d="M303 110 H333 M318 95 V125" stroke="var(--color-ink)" strokeWidth="2.5" />
+      <g transform="translate(238 34)">
+        <rect x="3" y="4" width="160" height="30" rx="15" fill="var(--color-ink)" />
+        <rect width="160" height="30" rx="15" fill="var(--color-ink)" stroke="#fff" strokeWidth="2" />
+        <text x="80" y="20" textAnchor="middle" fontSize="13" fill="#fff" letterSpacing="1" style={{ fontFamily: "var(--font-display)" }}>
+          HALF-COURT · 100
+        </text>
+      </g>
+      <g transform="translate(212 160)">
+        <rect x="3" y="4" width="212" height="30" rx="15" fill="var(--color-ink)" />
+        <rect width="212" height="30" rx="15" fill="#fff" stroke="var(--color-ink)" strokeWidth="2.5" />
+        <text x="106" y="20" textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--color-ink)" style={{ fontFamily: "var(--font-sans)" }}>
+          The rarer, the deeper
+        </text>
+      </g>
     </svg>
   );
 }
