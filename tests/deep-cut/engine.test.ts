@@ -63,6 +63,16 @@ describe("Deep Cut typed guesses", () => {
     { i: "smithke01", n: "Kenny Smith", y: "1987–1997", f: 33 },
     { i: "ewingpa01", n: "Patrick Ewing (1985–2002)", y: "1985–2002", f: 72 },
     { i: "ewingpa02", n: "Patrick Ewing (2008–2011)", y: "2008–2011", f: 2 },
+    { i: "bryanko01", n: "Kobe Bryant", y: "1996–2016", f: 98 },
+    { i: "simmoko01", n: "Kobi Simmons", y: "2017–2020", f: 1 },
+    { i: "duranke01", n: "Kevin Durant", y: "2007–2026", f: 90 },
+    { i: "westbru01", n: "Russell Westbrook", y: "2008–2026", f: 77 },
+    { i: "jokicni01", n: "Nikola Jokić", y: "2015–2026", f: 83 },
+    { i: "nowitdi01", n: "Dirk Nowitzki", y: "1998–2019", f: 86 },
+    { i: "onealsh01", n: "Shaquille O'Neal", y: "1992–2011", f: 98 },
+    { i: "anthoca01", n: "Carmelo Anthony", y: "2003–2022", f: 66 },
+    { i: "davisan02", n: "Anthony Davis", y: "2012–2026", f: 63 },
+    { i: "edwaran01", n: "Anthony Edwards", y: "2020–2026", f: 60 },
   ]);
   const who = (t: string) => {
     const r = resolveGuess(index, t);
@@ -95,6 +105,31 @@ describe("Deep Cut typed guesses", () => {
     expect(who("zzzz")).toBe("none");
     expect(who("Sentry")).toBe("none");
     expect(who("")).toBe("none");
+  });
+  it("corrects typos generously", () => {
+    expect(who("Kevn Durnt")).toBe("duranke01");
+    expect(who("Russel Westbrok")).toBe("westbru01");
+    expect(who("Shaquile Oneal")).toBe("onealsh01");
+    expect(who("Lebrom")).toBe("jamesle01");
+  });
+  it("hears sound-alike spellings", () => {
+    expect(who("Steven Curry")).toBe("curryst01");
+    expect(who("Jokich")).toBe("jokicni01");
+    expect(who("Dirk Nowitsky")).toBe("nowitdi01");
+  });
+  it("forgives missing spaces, swapped order and cut-off names", () => {
+    expect(who("lebronjames")).toBe("jamesle01");
+    expect(who("James LeBron")).toBe("jamesle01");
+    expect(who("Antetok")).toBe("antetgi01");
+    expect(who("Westbr")).toBe("westbru01");
+  });
+  it("leans toward the famous player a slip most likely meant", () => {
+    expect(who("Kobi")).toBe("bryanko01");
+    expect(who("Kobi Simmons")).toBe("simmoko01");
+  });
+  it("still asks when several well-known players fit", () => {
+    expect(who("Anthony")).toBe("ambiguous");
+    expect(who("Smith")).toBe("ambiguous");
   });
 });
 

@@ -9,45 +9,53 @@ import { ShareButton } from "@/components/common/ShareButton";
 import { puzzleDate, puzzleNumber } from "@/lib/day";
 import { combinedShare } from "@/lib/client/combined-share";
 import { allProgress, GAME_KEYS, isTripdub, streaks, type DayProgress, type GameKey } from "@/lib/client/progress";
-import { DeepCutPreview, ShotChartPreview, TriviaPreview } from "./Previews";
+import { LogoLockup } from "@/components/brand/Logo";
+import { GameIcon, type GameIconName } from "@/components/brand/GameIcon";
+import { DeepCutFeature, ShotChartPreview, StartingFivePreview, TriviaPreview } from "./Previews";
 
-type GameCard = { key: GameKey; title: string; href: string; blurb: string };
+type GameCard = { key: GameKey; title: string; href: string; blurb: string; icon: GameIconName };
 
-const SF: GameCard = {
-  key: "sf",
-  title: "Starting Five",
-  href: "/starting-five",
-  blurb: "Spin for five real NBA seasons, slot each player into a matchup, and take on tonight’s opposing five.",
+const FEATURED: GameCard = {
+  key: "deep",
+  title: "Deep Cut",
+  href: "/deep-cut",
+  icon: "deep",
+  blurb: "Seven prompts, endless right answers. The rarer the player you name, the deeper your shot.",
 };
 const MORE: GameCard[] = [
-  { key: "trivia", title: "NBA Trivia", href: "/trivia", blurb: "Seven questions built from the record books. The faster you answer, the more you score." },
-  { key: "shot", title: "Shot Chart", href: "/shot-chart", blurb: "Five real shot charts, from a star season to a deep cut. Name the player." },
-  { key: "deep", title: "Deep Cut", href: "/deep-cut", blurb: "Seven prompts, endless right answers. Name a player: the rarer the answer, the deeper the shot." },
+  { key: "sf", title: "Starting Five", href: "/starting-five", icon: "sf", blurb: "Spin five real seasons. Beat tonight’s five." },
+  { key: "trivia", title: "NBA Trivia", href: "/trivia", icon: "trivia", blurb: "Seven quick questions. Speed scores." },
+  { key: "shot", title: "Shot Chart", href: "/shot-chart", icon: "shot", blurb: "Five real shot charts. Name the player." },
 ];
 
-function Status({ done }: { done?: { summary: string } }) {
+function Status({ done, compact }: { done?: { summary: string }; compact?: boolean }) {
   return done ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-mint px-3 py-1 text-sm font-bold">
-      <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden>
+    <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-mint px-2.5 py-0.5 text-xs font-bold">
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0" aria-hidden>
         <path d="M3 8.5l3 3 7-7" fill="none" stroke="var(--color-ink)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      Done today: {done.summary}
+      <span className="truncate">{compact ? "Done" : `Done: ${done.summary}`}</span>
     </span>
   ) : (
-    <span className="inline-flex rounded-full bg-butter-soft px-3 py-1 text-sm font-bold">Today’s puzzle is waiting</span>
+    <span className="inline-flex rounded-full bg-butter-soft px-2.5 py-0.5 text-xs font-bold whitespace-nowrap">{compact ? "Ready" : "Today’s puzzle is ready"}</span>
   );
 }
 
-function Buttons({ card, done }: { card: GameCard; done: boolean }) {
+function Buttons({ card, done, archive, short }: { card: GameCard; done: boolean; archive?: boolean; short?: boolean }) {
   return (
-    <div className="mt-5 flex flex-wrap gap-2">
-      <Link href={card.href} className="btn btn-coral">
-        {done ? "See today’s result" : "Play today’s game"}
+    <div className="flex flex-wrap items-center gap-2">
+      <Link href={card.href} className="btn btn-coral btn-sm">
+        {done ? (short ? "Result" : "See today’s result") : short ? "Play today’s" : "Play today’s game"}
       </Link>
-      <Link href={`${card.href}?mode=unlimited`} className="btn btn-white">
+      <Link href={`${card.href}?mode=unlimited`} className="btn btn-white btn-sm">
         Unlimited
       </Link>
-      <span className="btn btn-white cursor-not-allowed opacity-55" aria-disabled title="1v1 is coming soon">
+      {archive && (
+        <Link href={`${card.href}?mode=archive`} className="btn btn-white btn-sm">
+          Archive
+        </Link>
+      )}
+      <span className="text-xs font-bold whitespace-nowrap text-ink-soft/70" title="1v1 is coming soon">
         1v1 soon
       </span>
     </div>
@@ -95,90 +103,90 @@ export function HomeDashboard() {
   const tripdub = isTripdub(day);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-6xl px-4 pt-3 pb-2 sm:px-6">
+      <section className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex gap-1.5" aria-label={`${doneCount} of ${GAME_KEYS.length} daily games done`}>
-            {GAME_KEYS.map((g) => (
-              <span key={g} className={`h-4 w-4 rounded-full border-[2.5px] border-ink ${day[g] ? "bg-coral" : "bg-white"}`} />
-            ))}
+          <LogoLockup className="w-20 shrink-0" arcId="home-arc" />
+          <div>
+            <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Four daily hoops games</h1>
+            <p className="text-sm font-medium text-ink-soft">New puzzles every midnight ET</p>
           </div>
-          <p className="text-sm font-bold">
-            {ready ? `${doneCount}/${GAME_KEYS.length} today` : "Today"}
-            <span className="ml-3 rounded-full bg-white px-2.5 py-1 text-ink shadow-[var(--shadow-pop-sm)] ring-2 ring-ink">
-              Streak <span className="varsity">{streak.current}</span>
-            </span>
-            {streak.tripdubs > 0 && (
-              <span className="ml-2 rounded-full bg-butter px-2.5 py-1 shadow-[var(--shadow-pop-sm)] ring-2 ring-ink">
-                Tripdubs <span className="varsity">{streak.tripdubs}</span>
-              </span>
-            )}
-          </p>
         </div>
-        <Countdown className="text-sm font-semibold" />
-      </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold">
+          <span className="flex gap-1" aria-label={`${doneCount} of ${GAME_KEYS.length} daily games done`}>
+            {GAME_KEYS.map((g) => (
+              <span key={g} className={`h-3.5 w-3.5 rounded-full border-[2.5px] border-ink ${day[g] ? "bg-coral" : "bg-white"}`} />
+            ))}
+          </span>
+          <span>{ready ? `${doneCount}/${GAME_KEYS.length} today` : "Today"}</span>
+          <span className="rounded-full bg-white px-2.5 py-0.5 ring-2 ring-ink">
+            Streak <span className="varsity">{streak.current}</span>
+          </span>
+          {streak.tripdubs > 0 && (
+            <span className="rounded-full bg-butter px-2.5 py-0.5 ring-2 ring-ink">
+              Tripdubs <span className="varsity">{streak.tripdubs}</span>
+            </span>
+          )}
+          <Countdown className="text-sm font-semibold text-ink-soft" />
+        </div>
+      </section>
 
       {tripdub && (
         <motion.section
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 18 }}
-          className="pop relative mt-5 flex flex-col items-start gap-4 overflow-hidden rounded-[var(--radius-card)] bg-butter p-5 sm:flex-row sm:items-center sm:p-6"
+          className="pop relative mt-3 flex flex-col items-start gap-3 overflow-hidden rounded-[var(--radius-card)] bg-butter p-4 sm:flex-row sm:items-center"
         >
           <Confetti />
-          <VarsityThree className="h-20 w-20 shrink-0" />
+          <VarsityThree className="h-14 w-14 shrink-0" />
           <div className="flex-1">
-            <p className="text-2xl font-extrabold">That’s a Tripdub.</p>
-            <p className="font-semibold">All four daily games done. Come back tomorrow to keep the streak going.</p>
+            <p className="text-xl font-extrabold">That’s a Tripdub.</p>
+            <p className="text-sm font-semibold">All four daily games done. Come back tomorrow to keep the streak going.</p>
           </div>
           <ShareButton text={combinedShare(puzzleNumber(puzzleDate()), day)} label="Share your Tripdub" />
         </motion.section>
       )}
 
-      <section className="pop mt-5 grid overflow-hidden rounded-[32px] bg-white sm:grid-cols-[1.1fr_1fr]">
-        <div className="p-6 sm:p-8">
-          <p className="text-sm font-bold text-coral-deep">Featured</p>
-          <h2 className="mt-1 text-4xl font-extrabold tracking-tight sm:text-5xl">{SF.title}</h2>
-          <p className="mt-3 max-w-md text-lg text-ink-soft">{SF.blurb}</p>
-          <div className="mt-4">
-            <Status done={day.sf} />
+      <section className="pop mt-3 grid overflow-hidden rounded-[28px] bg-white md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-2.5 p-5">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-bold">
+            <span className="varsity rounded-full bg-coral px-2 py-0.5 text-[11px] tracking-wider text-white">NEW</span>
+            <span className="text-coral-deep">Featured game</span>
+            <Status done={day[FEATURED.key]} />
+          </p>
+          <div>
+            <h2 className="flex items-center gap-2 text-[2.1rem] leading-none font-extrabold tracking-tight sm:text-[2.4rem]">
+              <GameIcon name={FEATURED.icon} className="h-7 w-7 text-coral-deep" />
+              {FEATURED.title}
+            </h2>
+            <p className="mt-2 max-w-md text-[15px] leading-snug text-ink-soft">{FEATURED.blurb}</p>
           </div>
-          <Buttons card={SF} done={!!day.sf} />
+          <Buttons card={FEATURED} done={!!day[FEATURED.key]} archive />
         </div>
-        <div className="relative hidden min-h-56 border-l-[2.5px] border-ink bg-sky sm:block" aria-hidden>
-          <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-            <g fill="none" stroke="#fff" strokeWidth="4" opacity="0.8">
-              <path d="M40 300 V200 A160 160 0 0 1 360 200 V300" />
-              <rect x="140" y="150" width="120" height="150" />
-              <circle cx="200" cy="150" r="40" />
-            </g>
-            {["PG", "SG", "SF", "PF", "C"].map((slot, i) => {
-              const [x, y] = [[200, 70], [330, 130], [70, 130], [290, 230], [110, 230]][i];
-              return (
-                <g key={slot}>
-                  <circle cx={x + 3} cy={y + 4} r="30" fill="var(--color-ink)" />
-                  <circle cx={x} cy={y} r="30" fill="#fff" stroke="var(--color-ink)" strokeWidth="4" />
-                  <text x={x} y={y + 7} textAnchor="middle" fontSize="20" fill="var(--color-ink)" style={{ fontFamily: "var(--font-display)" }}>
-                    {slot}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
+        <div className="relative hidden min-h-44 border-l-[2.5px] border-ink md:block">
+          <DeepCutFeature />
         </div>
       </section>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-3 grid gap-3 md:grid-cols-3 md:gap-4">
         {MORE.map((card) => (
-          <section key={card.key} className="pop overflow-hidden rounded-[var(--radius-card)] bg-white">
-            <div className="h-36 border-b-[2.5px] border-ink bg-sky">{card.key === "trivia" ? <TriviaPreview /> : card.key === "shot" ? <ShotChartPreview /> : <DeepCutPreview />}</div>
-            <div className="p-6">
-              <h2 className="text-3xl font-extrabold tracking-tight">{card.title}</h2>
-              <p className="mt-2 text-ink-soft">{card.blurb}</p>
-              <div className="mt-4">
-                <Status done={day[card.key]} />
+          <section key={card.key} className="pop flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-white">
+            <Link href={card.href} className="block h-16 overflow-hidden border-b-[2.5px] border-ink bg-sky" tabIndex={-1} aria-hidden>
+              {card.key === "sf" ? <StartingFivePreview /> : card.key === "trivia" ? <TriviaPreview /> : <ShotChartPreview />}
+            </Link>
+            <div className="flex flex-1 flex-col gap-1.5 px-4 pt-3 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <h2 className="flex items-center gap-1.5 text-lg font-extrabold tracking-tight">
+                  <GameIcon name={card.icon} className="h-5 w-5 text-coral-deep" />
+                  {card.title}
+                </h2>
+                <Status done={day[card.key]} compact />
               </div>
-              <Buttons card={card} done={!!day[card.key]} />
+              <p className="text-sm leading-snug text-ink-soft">{card.blurb}</p>
+              <div className="mt-auto pt-1.5">
+                <Buttons card={card} done={!!day[card.key]} short />
+              </div>
             </div>
           </section>
         ))}

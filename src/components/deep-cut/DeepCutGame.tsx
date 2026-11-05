@@ -503,7 +503,7 @@ export function DeepCutGame() {
   const r = s.reveal;
   const seconds = Math.ceil((live ? left : s.limitMs) / 1000);
   return (
-    <div className="relative h-[calc(100svh-4rem)] min-h-[560px] w-full">
+    <div className="relative h-[calc(100svh-var(--header-h))] min-h-[520px] w-full">
       <CourtStage feet={feet} shot={shot} landings={landings} anchor={0.8}>
         {/* HUD */}
         <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3 sm:p-4">

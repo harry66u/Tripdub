@@ -69,11 +69,16 @@ test("unlimited: play a game, then play again against a new team", async ({ page
   expect(await board(page).innerText()).not.toBe(firstOpponent);
 });
 
-test("home lists all four games and opens Starting Five", async ({ page }) => {
+test("home leads with Deep Cut, lists all four games, and opens each", async ({ page }) => {
   await page.goto("/");
-  for (const title of ["Starting Five", "NBA Trivia", "Shot Chart", "Deep Cut"]) {
+  for (const title of ["Deep Cut", "Starting Five", "NBA Trivia", "Shot Chart"]) {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   }
   await page.getByRole("link", { name: "Play today’s game" }).first().click();
+  await expect(page).toHaveURL(/deep-cut/);
+  await page.goto("/");
+  await page.getByRole("link", { name: "Play today’s" }).nth(1).click();
   await expect(page).toHaveURL(/starting-five/);
+  // The header marks where you are
+  await expect(page.getByRole("link", { name: "Starting Five" }).or(page.getByRole("link", { name: "Starting 5" })).filter({ visible: true }).first()).toHaveAttribute("aria-current", "page");
 });
